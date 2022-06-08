@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+
+<Template>
+    <SupportURL>https://forums.indigodomo.com/viewforum.php?f=369</SupportURL>
+    <Field id="refreshCallbackMethod" type="textfield" hidden="true" defaultValue="refresh_ui_callback"/>
+
+    <!-- Nest Home Away Configuration   -->
+    <Field id="header-1" type="label" alwaysUseInDialogHeightCalc="true" fontColor="green">
+        <Label>Nest Home / Away</Label>
+    </Field>
+    <Field id="space-1" type="label" alwaysUseInDialogHeightCalc="true" ><Label/></Field>
+        <Field id="starling_hub_indigo_id" type="menu"  default="-1" alwaysUseInDialogHeightCalc="true">
+        <Label>Starling Hub:</Label>
+        <List class="self" method="list_starling_hubs" dynamicReload="true"/>
+        <CallbackMethod>list_starling_hub_selected</CallbackMethod>
+    </Field>
+
+    <Field id="nest_id" type="menu"  default="FIRST" alwaysUseInDialogHeightCalc="true">
+        <Label>Nest Id:</Label>
+        <List class="self" method="list_nest_devices" dynamicReload="true"/>
+        <CallbackMethod>list_nest_device_selected</CallbackMethod>
+    </Field>
+    <Field id="nest_name" type="textfield"  defaultValue="" alwaysUseInDialogHeightCalc="true">
+        <Label>Nest Name:</Label>
+    </Field>
+    <Field id="nest_where" type="textfield"  defaultValue="" alwaysUseInDialogHeightCalc="true" hidden="true">
+        <Label>Nest Location:</Label>
+    </Field>
+ </Template>
+

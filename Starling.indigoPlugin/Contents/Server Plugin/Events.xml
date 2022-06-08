@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<Events>
+	<Event id="alertDetected">
+        <Name>Nest Protect Alert In Progress</Name>
+ 		<ConfigUI>
+        	<Field id="nestProtectDevice" type="menu">
+            	<Label>Nest Protect:</Label>
+            	<List class="indigo.devices" filter="self.nestProtect" />
+			</Field>
+ 		</ConfigUI>
+	</Event>
+	<Event id="alertNoLongerDetected">
+        <Name>Nest Protect Alert Ended</Name>
+ 		<ConfigUI>
+        	<Field id="nestProtectDevice" type="menu">
+            	<Label>Nest Protect:</Label>
+            	<List class="indigo.devices" filter="self.nestProtect" />
+			</Field>
+ 		</ConfigUI>
+	</Event>
+	<Event id="alertDetectedAnyProtect">
+        <Name>Alert In Progress [Any Nest Protect]</Name>
+	</Event>
+	<Event id="alerttNoLongeDetectedAnyProtect">
+        <Name>Alert Ended [All Nest Protect(s)]</Name>
+	</Event>
+</Events>

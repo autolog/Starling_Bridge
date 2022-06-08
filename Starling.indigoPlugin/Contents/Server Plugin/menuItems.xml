@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<MenuItems>
+	<MenuItem id="pluginInformation">
+		<Name>Display Plugin Information</Name>
+        <CallbackMethod>display_plugin_information</CallbackMethod>
+    </MenuItem>
+<!--    <MenuItem id="testForDave">-->
+<!--		<Name>Test For Dave</Name>-->
+<!--        <CallbackMethod>test_for_dave</CallbackMethod>-->
+<!--    </MenuItem>-->
+
+</MenuItems>

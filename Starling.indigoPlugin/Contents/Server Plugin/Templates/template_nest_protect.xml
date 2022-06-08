@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+
+<Template>
+    <SupportURL>https://forums.indigodomo.com/viewforum.php?f=369</SupportURL>
+    <Field id="refreshCallbackMethod" type="textfield" hidden="true" defaultValue="refresh_ui_callback"/>
+
+    <!-- Nest Thermostat State Configuration   -->
+    <Field type="checkbox" id="nest_occupancy_detected_enabled" default="true" hidden="false">
+        <Label>Nest Ooccupancy Detected Enabled:</Label>
+    </Field>
+
+    <!-- Nest Protect Configuration   -->
+    <Field id="header-1" type="label" alwaysUseInDialogHeightCalc="true" fontColor="green">
+        <Label>Nest Protect</Label>
+    </Field>
+        <Field id="space-1" type="label" alwaysUseInDialogHeightCalc="true" ><Label/></Field>
+        <Field id="starling_hub_indigo_id" type="menu"  default="" alwaysUseInDialogHeightCalc="true">
+        <Label>Starling Hub:</Label>
+<!--        <List class="self" method="list_starling_hubs" dynamicReload="true"/>-->
+        <List class="self" method="list_starling_hubs"/>
+        <CallbackMethod>list_starling_hub_selected</CallbackMethod>
+    </Field>
+
+    <Field id="nest_id" type="menu"  default="" alwaysUseInDialogHeightCalc="true">
+        <Label>Nest Id:</Label>
+        <List class="self" method="list_nest_devices" dynamicReload="true"/>
+        <CallbackMethod>list_nest_device_selected</CallbackMethod>
+    </Field>
+    <Field id="nest_name" type="textfield" readonly="YES"  defaultValue="" alwaysUseInDialogHeightCalc="true">
+        <Label>Nest Name:</Label>
+    </Field>
+    <Field id="nest_where" type="textfield" readonly="YES"  defaultValue="" alwaysUseInDialogHeightCalc="true">
+        <Label>Nest Location:</Label>
+    </Field>
+
+
+
+
+ </Template>
+

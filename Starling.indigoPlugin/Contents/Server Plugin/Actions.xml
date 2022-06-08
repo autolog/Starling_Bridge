@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<Actions>
+    <Action id="turnOnEcoMode" deviceFilter="self.nestThermostat" uiPath="DeviceActions">
+        <Name>Turn On Eco Mode</Name>
+        <CallbackMethod>turnOnEcoMode</CallbackMethod>
+    </Action>
+    <Action id="turnOffEcoMode" deviceFilter="self.nestThermostat" uiPath="DeviceActions">
+        <Name>Turn Off Eco Mode</Name>
+        <CallbackMethod>turnOffEcoMode</CallbackMethod>
+    </Action>
+    <Action id="toggleEcoMode" deviceFilter="self.nestThermostat" uiPath="DeviceActions">
+        <Name>Toggle Eco Mode</Name>
+        <CallbackMethod>toggleEcoMode</CallbackMethod>
+    </Action>
+</Actions>

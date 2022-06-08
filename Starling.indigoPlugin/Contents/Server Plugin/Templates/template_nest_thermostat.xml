@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+
+<Template>
+    <SupportURL>https://forums.indigodomo.com/viewforum.php?f=369</SupportURL>
+    <Field id="refreshCallbackMethod" type="textfield" hidden="true" defaultValue="refresh_ui_callback"/>
+
+    <!-- Nest Thermostat State Configuration   -->
+    <Field type="checkbox" id="cooling_enabled" default="false" hidden="true">
+        <Label>Cooling Enabled:</Label>
+    </Field>
+    <Field type="checkbox" id="fan_enabled" default="false" hidden="true">
+        <Label>Fan Enabled:</Label>
+    </Field>
+    <Field type="checkbox" id="hot_water_enabled" default="false" hidden="true">
+        <Label>Hot Water Enabled:</Label>
+    </Field>
+    <Field type="checkbox" id="humidifier_enabled" default="false" hidden="true">
+        <Label>Humidifier Enabled:</Label>
+    </Field>
+    <Field type="checkbox" id="sensor_enabled" default="false" hidden="true">
+        <Label>Sensor Enabled:</Label>
+    </Field>
+    <Field type="checkbox" id="temp_hold_mode_enabled" default="false" hidden="true">
+        <Label>Temp Hold Mode Enabled:</Label>
+    </Field>
+
+    <!-- Nest Thermostat Configuration   -->
+    <Field id="header-1" type="label" alwaysUseInDialogHeightCalc="true" fontColor="green">
+        <Label>Nest Thermostat</Label>
+    </Field>
+    <Field id="space-1" type="label" alwaysUseInDialogHeightCalc="true" ><Label/></Field>
+        <Field id="starling_hub_indigo_id" type="menu"  default="-1" alwaysUseInDialogHeightCalc="true">
+        <Label>Starling Hub:</Label>
+        <List class="self" method="list_starling_hubs" dynamicReload="true"/>
+        <CallbackMethod>list_starling_hub_selected</CallbackMethod>
+    </Field>
+
+    <Field id="nest_id" type="menu"  default="FIRST" alwaysUseInDialogHeightCalc="true">
+        <Label>Nest Id:</Label>
+        <List class="self" method="list_nest_devices" dynamicReload="true"/>
+        <CallbackMethod>list_nest_device_selected</CallbackMethod>
+    </Field>
+    <Field id="nest_name" type="textfield" readonly="YES" defaultValue="" alwaysUseInDialogHeightCalc="true">
+        <Label>Nest Name:</Label>
+    </Field>
+    <Field id="nest_where" type="textfield"  readonly="YES" defaultValue="" alwaysUseInDialogHeightCalc="true">
+        <Label>Nest Location:</Label>
+    </Field>
+
+   <Field id="space-broadcast" type="label"><Label/></Field>
+    <Field id="separator-logging" type="separator" alwaysUseInDialogHeightCalc="true"/>
+    <Field id="header-logging" type="label" alwaysUseInDialogHeightCalc="true" fontColor="green">
+        <Label>LOGGING</Label>
+    </Field>
+
+    <!-- Setpoint -->
+    <Field id="hideSetpointBroadcast" type="checkbox" defaultValue="false">
+        <Description>Hide setpoint message broadcasts in Event Log</Description>
+    </Field>
+    <Field id="space-hideSetpointBroadcast" type="label"><Label/></Field>
+
+    <!-- Temperature -->
+    <Field id="hideTemperatureBroadcast" type="checkbox" defaultValue="false">
+        <Description>Hide temperature message broadcasts in Event Log</Description>
+    </Field>
+    <Field id="space-hideTemperatureBroadcast" type="label"><Label/></Field>
+
+    <!-- Humidity -->
+    <Field id="hideHumidityBroadcast" type="checkbox" defaultValue="false">
+        <Description>Hide humidity message broadcasts in Event Log</Description>
+    </Field>
+    <Field id="space-hideHumidityBroadcast" type="label"><Label/></Field>
+
+ </Template>
+

@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<Template>
+    <SupportURL>https://forums.indigodomo.com/viewforum.php?f=369</SupportURL>
+    <Field id="member_of_device_group" type="checkbox" hidden="true"
+           tooltip="This is a flag for checking whether this secondary device is associated with a primary device.">
+        <Label>Member of Device Group:</Label>
+    </Field>
+
+    <Field id="warning" type="label" visibleBindingId="member_of_device_group" visibleBindingValue="false"
+            fontColor="red">
+        <Label>You are not allowed to directly create or edit this secondary device as it will be automatically created and associated with a primary device of a device group if it is required. Cancel and then delete this device.</Label>
+    </Field>
+
+    <Field id="info" type="label" visibleBindingId="member_of_device_group" visibleBindingValue="true">
+        <Label>This is a secondary device of a device group. For more settings and details about this device, select the first device in the group.</Label>
+    </Field>
+
+    <!-- Linked Indigo Device -->
+    <Field id="linkedPrimaryIndigoDevice" type="textfield" defaultValue="Some info ..." ReadOnly="YES"
+            visibleBindingId="member_of_device_group" visibleBindingValue="true"
+           tooltip="Linked Primary Indigo Device">
+        <Label>Linked Primary Indigo Device:</Label>
+    </Field>
+
+    <!-- Linked Indigo Device Id-->
+    <Field id="linkedPrimaryIndigoDeviceId" type="textfield" defaultValue="0" ReadOnly="YES" hidden="true" />
+
+    <!-- Linked Nest Device -->
+    <Field id="associatedNestDevice" type="textfield" defaultValue="Some info ..." ReadOnly="YES"
+            visibleBindingId="member_of_device_group" visibleBindingValue="true"
+           tooltip="Associated Nest Device">
+        <Label>Associated Nest Device:</Label>
+    </Field>
+</Template>

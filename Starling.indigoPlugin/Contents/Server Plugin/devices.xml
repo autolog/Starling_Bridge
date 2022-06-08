@@ -1,0 +1,375 @@
+<?xml version="1.0"?>
+<Devices>
+    <!-- Starling Hub -->
+    <Device id="starlingHub"  type="custom" subType="indigo.kDeviceSubType.Other">
+        <Name>Starling Hub</Name>
+        <ConfigUI>
+            <Template file="Templates/template_starling_hub.xml" />
+		</ConfigUI>
+        <States>
+            <State id="api_version">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>API Version changed</TriggerLabel>
+                <ControlPageLabel>API Version</ControlPageLabel>
+            </State>
+            <State id="api_ready">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>API Ready changed</TriggerLabel>
+                <ControlPageLabel>API Ready</ControlPageLabel>
+            </State>
+            <State id="connected_to_nest">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Connected To Nest changed</TriggerLabel>
+                <ControlPageLabel>Connected To Nest</ControlPageLabel>
+            </State>
+            <State id="app_name">
+                <ValueType>String</ValueType>
+                <TriggerLabel>App Name changed</TriggerLabel>
+                <ControlPageLabel>App Name</ControlPageLabel>
+            </State>
+            <State id="permission_read">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Read Permission changed</TriggerLabel>
+                <ControlPageLabel>Read Permission</ControlPageLabel>
+            </State>
+            <State id="permission_write">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Write Permission changed</TriggerLabel>
+                <ControlPageLabel>Write Permission</ControlPageLabel>
+            </State>
+            <State id="permission_camera">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Camera Permission changed</TriggerLabel>
+                <ControlPageLabel>Camera Permission</ControlPageLabel>
+            </State>
+            <State id="status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+            <State id="status_message">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+        </States>
+        <UiDisplayStateId>status</UiDisplayStateId>
+	</Device>
+
+    <Device id="nestProtect"  type="sensor" subType="indigo.kSensorDeviceSubType.Smoke">
+        <Name>Nest Protect</Name>
+        <ConfigUI>
+            <Template file="Templates/template_nest_protect.xml" />
+		</ConfigUI>
+        <States>
+            <State id="status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+            <State id="status_message">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+            <State id="where">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Where changed</TriggerLabel>
+                <ControlPageLabel>Where</ControlPageLabel>
+            </State>
+            <State id="name">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Name changed</TriggerLabel>
+                <ControlPageLabel>Name</ControlPageLabel>
+            </State>
+            <State id="serial_number">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Serial Number changed</TriggerLabel>
+                <ControlPageLabel>Serial Number</ControlPageLabel>
+            </State>
+            <State id="structure_name">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Structure Name changed</TriggerLabel>
+                <ControlPageLabel>Serial Number</ControlPageLabel>
+            </State>
+            <State id="batteryStatus">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Battery Status changed</TriggerLabel>
+                <ControlPageLabel>Battery Status</ControlPageLabel>
+            </State>
+            <State id="manual_test_active">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Manual Test Active</TriggerLabel>
+                <ControlPageLabel>Manual Test Active</ControlPageLabel>
+            </State>
+            <State id="alert_in_progress">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Alert In Progress</TriggerLabel>
+                <ControlPageLabel>Alert In Progress</ControlPageLabel>
+            </State>
+
+        </States>
+        <UiDisplayStateId>status</UiDisplayStateId>
+    </Device>
+
+    <Device id="nestHomeAwayControl"  type="relay"  subType="indigo.kRelayDeviceSubType.PlugIn">
+        <Name>Nest Home/Away</Name>
+        <ConfigUI>
+            <Template file="Templates/template_nest_home_away.xml" />
+		</ConfigUI>
+        <States>
+            <State id="status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+            <State id="status_message">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+<!--            <State id="where">-->
+<!--                <ValueType>String</ValueType>-->
+<!--                <TriggerLabel>Where changed</TriggerLabel>-->
+<!--                <ControlPageLabel>Where</ControlPageLabel>-->
+<!--            </State>-->
+            <State id="name">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Name changed</TriggerLabel>
+                <ControlPageLabel>Name</ControlPageLabel>
+            </State>
+<!--            <State id="serial_number">-->
+<!--                <ValueType>String</ValueType>-->
+<!--                <TriggerLabel>Serial Number changed</TriggerLabel>-->
+<!--                <ControlPageLabel>Serial Number</ControlPageLabel>-->
+<!--            </State>-->
+            <State id="structure_name">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Structure Name changed</TriggerLabel>
+                <ControlPageLabel>Serial Number</ControlPageLabel>
+            </State>
+        </States>
+        <UiDisplayStateId>status</UiDisplayStateId>
+    </Device>
+
+    <Device id="nestThermostat"  type="thermostat">
+        <Name>Nest Thermostat</Name>
+        <ConfigUI>
+            <Template file="Templates/template_nest_thermostat.xml" />
+		</ConfigUI>
+        <States>
+            <State id="status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+            <State id="status_message">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+            <State id="where">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Where changed</TriggerLabel>
+                <ControlPageLabel>Where</ControlPageLabel>
+            </State>
+            <State id="name">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Name changed</TriggerLabel>
+                <ControlPageLabel>Name</ControlPageLabel>
+            </State>
+            <State id="serial_number">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Serial Number changed</TriggerLabel>
+                <ControlPageLabel>Serial Number</ControlPageLabel>
+            </State>
+            <State id="structure_name">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Structure Name changed</TriggerLabel>
+                <ControlPageLabel>Serial Number</ControlPageLabel>
+            </State>
+
+            <State id="backplate_temperature">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Back Plate Temperatue changed</TriggerLabel>
+                <ControlPageLabel>Back Plate Temperatue</ControlPageLabel>
+            </State>
+            <State id="can_cool">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Can Cool changed</TriggerLabel>
+                <ControlPageLabel>Can Cool</ControlPageLabel>
+            </State>
+            <State id="can_heat">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Can Heat changed</TriggerLabel>
+                <ControlPageLabel>Can Heat</ControlPageLabel>
+            </State>
+            <State id="current_temperature">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Current Temperatue changed</TriggerLabel>
+                <ControlPageLabel>Current Temperatue</ControlPageLabel>
+            </State>
+            <State id="display_temperature_units">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Display Temperature Units changed</TriggerLabel>
+                <ControlPageLabel>Display Temperature Units</ControlPageLabel>
+            </State>
+<!--
+            <State id="eco_mode">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Eco Mode changed</TriggerLabel>
+                <ControlPageLabel>Eco Mode</ControlPageLabel>
+            </State>
+-->
+<!--            <State id="fan_running">-->
+<!--                <ValueType boolType="TrueFalse">Boolean</ValueType>-->
+<!--                <TriggerLabel>Fan Running changed</TriggerLabel>-->
+<!--                <ControlPageLabel>Fan Running</ControlPageLabel>-->
+<!--            </State>-->
+<!--
+            <State id="hot_water_enabled">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Hot Water Enabled changed</TriggerLabel>
+                <ControlPageLabel>Hot Water Enabled</ControlPageLabel>
+            </State>
+-->
+            <State id="humidity_percent">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Humidity Percent changed</TriggerLabel>
+                <ControlPageLabel>Humidity Percent Enabled</ControlPageLabel>
+            </State>
+            <State id="hvac_mode">
+                <ValueType>String</ValueType>
+                <TriggerLabel>HVAC Mode changed</TriggerLabel>
+                <ControlPageLabel>HVAC Mode</ControlPageLabel>
+            </State>
+            <State id="hvac_state">
+                <ValueType>String</ValueType>
+                <TriggerLabel>HVAC State changed</TriggerLabel>
+                <ControlPageLabel>HVAC State</ControlPageLabel>
+            </State>
+<!--
+            <State id="sensor_selected">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Sensor Selected changed</TriggerLabel>
+                <ControlPageLabel>Sensor Selected</ControlPageLabel>
+            </State>
+-->
+<!--
+            <State id="target_cooling_threshold_temperature">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Target Cooling Threshold Temperature changed</TriggerLabel>
+                <ControlPageLabel>Target Cooling Threshold Temperature</ControlPageLabel>
+            </State>
+            <State id="target_heating_threshold_temperature">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Target Heating Threshold Temperature changed</TriggerLabel>
+                <ControlPageLabel>Target Heating Threshold Temperature</ControlPageLabel>
+            </State>
+-->
+            <State id="target_temperature">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Target Temperature changed</TriggerLabel>
+                <ControlPageLabel>Target Temperature</ControlPageLabel>
+            </State>
+<!--
+            <State id="temperature_hold_mode">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Temperature Hold Mode changed</TriggerLabel>
+                <ControlPageLabel>Temperature Hold Mode</ControlPageLabel>
+            </State>
+-->
+        </States>
+        <UiDisplayStateId>status</UiDisplayStateId>
+    </Device>
+
+    <!-- Motion Sensor [Secondary] -->
+    <Device id="nestProtectMotion" type="sensor" subType="indigo.kSensorDeviceSubType.Motion">
+        <Name>Nest Protect [Motion]</Name>
+        <ConfigUI>
+            <Template file="Templates/template_nest_sub_type.xml" />
+		</ConfigUI>
+        <States>
+            <State id="status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+            <State id="status_message">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+        </States>
+	</Device>
+
+    <!-- CO Sensor [Secondary] -->
+    <Device id="nestProtectCo" type="sensor" subType="indigo.kSensorDeviceSubType.CO">
+        <Name>Nest Protect [CO]</Name>
+        <ConfigUI>
+            <Template file="Templates/template_nest_sub_type.xml" />
+		</ConfigUI>
+        <States>
+            <State id="status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+            <State id="status_message">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+        </States>
+	</Device>
+
+
+    <!-- Humidifier [Secondary] -->
+    <Device id="nestThermostatHumidifier" type="dimmer" subType="indigo.kDimmerDeviceSubType.PlugIn">
+        <Name>Nest Thermostat [Humidifier]</Name>
+        <ConfigUI>
+            <Template file="Templates/template_nest_sub_type.xml" />
+		</ConfigUI>
+        <States>
+            <State id="current_humidifier_state">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Current Humidifier State changed</TriggerLabel>
+                <ControlPageLabel>Current Humidifier State</ControlPageLabel>
+            </State>
+            <State id="humidifier_active">
+                <ValueType boolType="TrueFalse">Boolean</ValueType>
+                <TriggerLabel>Humidifier Active changed</TriggerLabel>
+                <ControlPageLabel>Humidifier Active Enabled</ControlPageLabel>
+            </State>
+            <State id="target_humidity">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Target Humidity changed</TriggerLabel>
+                <ControlPageLabel>Target Humidity</ControlPageLabel>
+            </State>
+            <State id="humidity_percent">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Humidity Percent changed</TriggerLabel>
+                <ControlPageLabel>Humidity Percent Enabled</ControlPageLabel>
+            </State>
+        </States>
+        <UiDisplayStateId>humidity</UiDisplayStateId>
+	</Device>
+
+    <!-- Fan [Secondary] -->
+    <Device id="nestThermostatFan" type="relay" subType="indigo.kRelayDeviceSubType.PlugIn">
+        <Name>Nest Thermostat [Fan]</Name>
+        <ConfigUI>
+            <Template file="Templates/template_nest_sub_type.xml" />
+		</ConfigUI>
+	</Device>
+
+    <!-- Hot Water [Secondary] -->
+    <Device id="nestThermostatHotWater" type="relay" subType="indigo.kRelayDeviceSubType.PlugIn">
+        <Name>Nest Thermostat [Hot Water]</Name>
+        <ConfigUI>
+            <Template file="Templates/template_nest_sub_type.xml" />
+		</ConfigUI>
+	</Device>
+
+
+</Devices>

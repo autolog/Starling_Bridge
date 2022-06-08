@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+
+<Template>
+    <SupportURL>https://forums.indigodomo.com/viewforum.php?f=369</SupportURL>
+
+<!-- Hubitat Elevation Configuration   -->
+    <Field id="header-1" type="label" alwaysUseInDialogHeightCalc="true" fontColor="green">
+        <Label>Starling Hub</Label>
+    </Field>
+    <Field id="space-1" type="label" alwaysUseInDialogHeightCalc="true"><Label/></Field>
+    <Field id="starling_hub_ip" type="textfield"  defaultValue="" alwaysUseInDialogHeightCalc="true">
+        <Label>Starling Hub IP Address:</Label>
+    </Field>
+    <Field id="help-1" type="label" alignWithControl="true" alwaysUseInDialogHeightCalc="true">
+        <Label>^ Must be the Starling Hub IP Address as recorded in the Starling Hub's 'Advanced Settings' section.</Label>
+    </Field>
+    <Field id="space-2" type="label" alwaysUseInDialogHeightCalc="true"><Label/></Field>
+    <Field id="starling_hub_ssl_tls" type="checkbox" defaultValue="true">
+        <Label>Hub Security:</Label>
+        <Description>SSL/TLS Encryption</Description>
+    </Field>
+    <Field id="help-2" type="label" alignWithControl="true" alwaysUseInDialogHeightCalc="true">
+        <Label>^ Select whether to enable encrypted access or not.</Label>
+    </Field>
+    <Field id="space-3" type="label" alwaysUseInDialogHeightCalc="true"><Label/></Field>
+    <Field id="api_key" type="textfield" defaultValue="">
+        <Label>Key:</Label>
+        <Description>API Key</Description>
+    </Field>
+    <Field id="help-3" type="label" alignWithControl="true" alwaysUseInDialogHeightCalc="true">
+        <Label>^ Enter API Key you must have set up in the Starling Hub's 'Starling Developer Connect' section.</Label>
+    </Field>
+</Template>

@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<PluginConfig>
+    <SupportURL>https://forums.indigodomo.com/viewforum.php?f=369</SupportURL>
+    <Field id="description" type="label">
+        <Label>This Plugin links Indigo to a Starling Home Hub. 😄</Label>
+    </Field>
+    <Field id="copyright" type="label">
+        <Label>Copyright © 2022 Autolog</Label>
+    </Field>
+
+	<Field id="space_1" type="label" alwaysUseInDialogHeightCalc="true"><Label/></Field>
+    <Field id="separator_3" type="separator"/>
+	<Field id="polling_seconds" type="menu" defaultValue="5" tooltip="Select polling interval">
+        <Label>Polling Interval:</Label>
+        <List>
+            <Option value="1">Every second</Option>
+			<Option value="2">Every 2 seconds</Option>
+			<Option value="5">Every 5 seconds</Option>
+			<Option value="10">Every 10 seconds</Option>
+			<Option value="15">Every 15 seconds</Option>
+        </List>
+    </Field>
+
+<!--    <Field id="header_auto_create_starling_devices" type="label" fontColor="green" alwaysUseInDialogHeightCalc="true">-->
+<!--        <Label>DEVICE AUTO-CREATE</Label>-->
+<!--    </Field>-->
+<!--    <Field type="checkbox" id="auto_create_starling_devices" default="false" alwaysUseInDialogHeightCalc="true">-->
+<!--        <Label>Auto-Create:</Label>-->
+<!--        <Description>Enable automatic Starling device creation.</Description>-->
+<!--    </Field>-->
+<!--    <Field id="starling_device_folder_name" type="textfield" defaultValue="Starling" alwaysUseInDialogHeightCalc="true">-->
+<!--        <Label>Device Folder Name:</Label>-->
+<!--    </Field>-->
+<!--    <Field id="help_starling_device_folder_name" type="label" alignWithControl="true">-->
+<!--        <Label>^ Specify the name of the Indigo folder in which the plugin will create any Starling devices if device Auto-Create is enabled. Leave empty if the folder is not required.</Label>-->
+<!--     </Field>-->
+
+    <Field id="separator-1" type="separator" alwaysUseInDialogHeightCalc="true"/>
+	<Field id="header-1" type="label" alwaysUseInDialogHeightCalc="true" fontColor="green">
+        <Label>PLUGIN / INDIGO EVENT LOG LOGGING</Label>
+    </Field>
+
+	<Field id="space_2" type="label" alwaysUseInDialogHeightCalc="true"><Label/></Field>
+
+	<Field id="eventLogLevel" type="menu" defaultValue="20" alwaysUseInDialogHeightCalc="true">
+		<Label>Logging Level - Indigo Event Log:</Label>
+		<List>
+			<Option value="10">Debugging Messages</Option>
+			<Option value="15">Starling Home Hub Logging Messages</Option>
+			<Option value="20">Informational Messages</Option>
+			<Option value="30">Warning Messages</Option>
+			<Option value="40">Error Messages</Option>
+			<Option value="50">Critical Errors Only</Option>
+		</List>
+	</Field>
+
+	<Field id="pluginLogLevel" type="menu" defaultValue="20" alwaysUseInDialogHeightCalc="true">
+		<Label>Logging Level - Plugin Event Log:</Label>
+		<List>
+			<Option value="10">Debugging Messages</Option>
+			<Option value="15">Starling Home Hub Logging Messages</Option>
+			<Option value="20">Informational Messages</Option>
+			<Option value="30">Warning Messages</Option>
+			<Option value="40">Error Messages</Option>
+			<Option value="50">Critical Errors Only</Option>
+		</List>
+	</Field>
+
+	<Field id="separator-2" type="separator" alwaysUseInDialogHeightCalc="true"/>
+
+</PluginConfig>
