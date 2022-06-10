@@ -3,7 +3,7 @@
 <Template>
     <SupportURL>https://forums.indigodomo.com/viewforum.php?f=369</SupportURL>
 
-<!-- Hubitat Elevation Configuration   -->
+<!-- Starling Hub Configuration   -->
     <Field id="header-1" type="label" alwaysUseInDialogHeightCalc="true" fontColor="green">
         <Label>Starling Hub</Label>
     </Field>

@@ -16,7 +16,7 @@ except ImportError:
     cryptography_imported = False
 
 from datetime import datetime
-
+import json
 import os
 import platform
 import queue
@@ -145,6 +145,9 @@ class Plugin(indigo.PluginBase):
         self.globals[LIST_NEST_DEVICES] = set()
         self.globals[LIST_NEST_DEVICES_SELECTED] = False
 
+        self.globals[FILTERS] = list()
+        self.globals[FILTERABLE_DEVICES] = dict()
+
         # Initialise Queues area for Starling Hubs
         self.globals[QUEUES] = dict()
 
@@ -154,20 +157,19 @@ class Plugin(indigo.PluginBase):
     def display_plugin_information(self):
         try:
             def plugin_information_message():
-                startup_message_ui = "\n"  # Start with a line break
-                header_title = f" Plugin Information "
-                startup_message_ui += f"{header_title:={'^'}130}\n"
-                startup_message_ui += f"{'Plugin Name:':<31} {self.globals[PLUGIN_INFO][PLUGIN_DISPLAY_NAME]}\n"
-                startup_message_ui += f"{'Plugin Version:':<31} {self.globals[PLUGIN_INFO][PLUGIN_VERSION]}\n"
-                startup_message_ui += f"{'Plugin ID:':<31} {self.globals[PLUGIN_INFO][PLUGIN_ID]}\n"
-                startup_message_ui += f"{'Indigo Version:':<31} {indigo.server.version}\n"
-                startup_message_ui += f"{'Indigo License:':<31} {indigo.server.licenseStatus}\n"
-                startup_message_ui += f"{'Indigo API Version:':<31} {indigo.server.apiVersion}\n"
-                startup_message_ui += f"{'Architecture:':<31} {platform.machine()}\n"
-                startup_message_ui += f"{'Python Version:':<31} {sys.version.split(' ')[0]}\n"
-                startup_message_ui += f"{'Mac OS Version:':<31} {platform.mac_ver()[0]}\n"
-                startup_message_ui += f"{'Plugin Process ID:':<31} {os.getpid()}\n"
-                startup_message_ui += f"{'':={'^'}130}\n"
+                startup_message_ui = "Plugin Information:\n"
+                startup_message_ui += f"{'':={'^'}80}\n"
+                startup_message_ui += f"{'Plugin Name:':<30} {self.globals[PLUGIN_INFO][PLUGIN_DISPLAY_NAME]}\n"
+                startup_message_ui += f"{'Plugin Version:':<30} {self.globals[PLUGIN_INFO][PLUGIN_VERSION]}\n"
+                startup_message_ui += f"{'Plugin ID:':<30} {self.globals[PLUGIN_INFO][PLUGIN_ID]}\n"
+                startup_message_ui += f"{'Indigo Version:':<30} {indigo.server.version}\n"
+                startup_message_ui += f"{'Indigo License:':<30} {indigo.server.licenseStatus}\n"
+                startup_message_ui += f"{'Indigo API Version:':<30} {indigo.server.apiVersion}\n"
+                startup_message_ui += f"{'Architecture:':<30} {platform.machine()}\n"
+                startup_message_ui += f"{'Python Version:':<30} {sys.version.split(' ')[0]}\n"
+                startup_message_ui += f"{'Mac OS Version:':<30} {platform.mac_ver()[0]}\n"
+                startup_message_ui += f"{'Plugin Process ID:':<30} {os.getpid()}\n"
+                startup_message_ui += f"{'':={'^'}80}\n"
                 return startup_message_ui
 
             self.logger.info(plugin_information_message())
@@ -456,6 +458,9 @@ class Plugin(indigo.PluginBase):
         :return:
         """
 
+        if dev_id not in indigo.devices:
+            return
+
         dev = indigo.devices[int(dev_id)]
 
         try:
@@ -463,18 +468,7 @@ class Plugin(indigo.PluginBase):
                 self.logger.threaddebug(f"'closedDeviceConfigUi' called with userCancelled = {str(user_cancelled)}")
                 return
 
-            if type_id == "starlingHub":
-                pass  # Code below now in start device
-                # if dev_id not in self.globals[HUBS]:
-                #     self.globals[HUBS][dev.id] = dict()
-                #     self.globals[HUBS][dev.id][STARLING_API_VERSION] = ""
-                #     self.globals[HUBS][dev.id][NEST_DEVICES_BY_INDIGO_DEVICE_ID] = dict()
-                #     self.globals[HUBS][dev.id][NEST_DEVICES_BY_NEST_ID] = dict()
-                #
-                #     # Create Queues for handling Starling Hub API requests
-                #     if dev_id not in self.globals[QUEUES]:
-                #         self.globals[QUEUES][dev.id] = queue.PriorityQueue()  # Used to queue API requests for specific Starling Hub
-            elif type_id in ("nestProtect", "nestThermostat", "nestHomeAwayControl"):
+            if type_id in ("nestProtect", "nestThermostat", "nestHomeAwayControl"):
                 starling_hub_device_id = int(values_dict.get("starling_hub_indigo_id", 0))
                 if starling_hub_device_id > 0:
                     if dev_id not in self.globals[HUBS][starling_hub_device_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID]:
@@ -514,64 +508,83 @@ class Plugin(indigo.PluginBase):
             self.indigo_log_handler.setLevel(event_log_level)
             self.plugin_file_handler.setLevel(plugin_log_level)
 
-            # # Set Hubitat MQTT Message Filter
-            # self.globals[HE_MQTT_FILTERS] = list()  # Initialise Hubitat MQTT filter dictionary
-            # mqtt_hubitat_message_filter = values_dict.get("mqttHubitatMessageFilter", [u"-0-|||-- Don't Log Any Devices --"])
-            # log_message = u"MQTT Topic Filtering active for the following Hubitat device(s):"  # Not used if no logging required
-            # filtering_required = False
-            #
-            # spaces = " " * 35  # used to pad log messages
-            #
-            # if len(mqtt_hubitat_message_filter) == 0:
-            #     self.globals[HE_MQTT_FILTERS] = [u"-0-"]
-            # else:
-            #     for entry in mqtt_hubitat_message_filter:
-            #         hubitat_hub_name, hubitat_device_name = entry.split("|||")
-            #         if hubitat_hub_name == "-0-":  # Ignore '-- Don't Log Any Devices --'
-            #             self.globals[HE_MQTT_FILTERS] = [u"-0-"]
-            #             break
-            #         elif hubitat_hub_name == "-1-":  # Ignore '-- Log All Devices --'
-            #             self.globals[HE_MQTT_FILTERS] = [u"-1-"]
-            #             log_message = u"{0}\n{1}All Tasmota Devices".format(log_message, spaces)
-            #             filtering_required = True
-            #             break
-            #         else:
-            #             hubitat_hub_and_device_name_ui = u"{0} | {1}".format(hubitat_hub_name, hubitat_device_name)
-            #             self.globals[HE_MQTT_FILTERS].append(u"{0}|{1}".format(hubitat_hub_name.lower(), hubitat_device_name.lower()))
-            #             spaces = " " * 24
-            #             log_message = u"{0}\n{1}Hubitat Device: '{2}'".format(log_message, spaces, hubitat_hub_and_device_name_ui)
-            #             filtering_required = True
-            #
-            # if filtering_required:
-            #     self.logger.warning("{0}\n".format(log_message))
-            #
-            # # Set Tasmota MQTT Message Filter
-            # self.globals[TASMOTA_MQTT_FILTERS] = list()  # Initialise Tasmota MQTT filter dictionary
-            # mqtt_tasmota_message_filter = values_dict.get("mqttTasmotaMessageFilter", [u"-0-|||-- Don't Log Any Devices --"])
-            # log_message = u"MQTT Topic Filtering active for the following Tasmota device(s):"  # Not used if no logging required
-            # filtering_required = False
-            #
-            # if len(mqtt_tasmota_message_filter) == 0:
-            #     self.globals[TASMOTA_MQTT_FILTERS] = [u"-0-"]
-            # else:
-            #     for entry in mqtt_tasmota_message_filter:
-            #         entry_key, entry_name = entry.split("|||")
-            #         if entry_key == "-0-":  # Ignore '-- Don't Log Any Devices --'
-            #             self.globals[TASMOTA_MQTT_FILTERS] = [u"-0-"]
-            #             break
-            #         elif entry_key == "-1-":  # Ignore '-- Log All Devices --'
-            #             self.globals[TASMOTA_MQTT_FILTERS] = [u"-1-"]
-            #             log_message = u"{0}\n{1}All Tasmota Devices".format(log_message, spaces)
-            #             filtering_required = True
-            #             break
-            #         else:
-            #             self.globals[TASMOTA_MQTT_FILTERS].append(entry_key)
-            #             log_message = u"{0}\n{1}Tasmota Device: '{2}'".format(log_message, spaces, entry_name)
-            #             filtering_required = True
-            #
-            # if filtering_required:
-            #     self.logger.warning("{0}\n".format(log_message))
+            # Set Starling Hub Message Filter
+            self.globals[FILTERS] = list()  # Initialise Starling filter dictionary
+            nest_message_filter = values_dict.get("nestMessageFilter", [u"-0-|||-- Don't Log Any Devices --"])
+            log_message = u"Filtering active for the following Nest device(s):"  # Not used if no logging required
+            filtering_required = False
 
+            spaces = " " * 35  # used to pad log messages
+
+            if len(self.globals[FILTERABLE_DEVICES]) == 0:
+                # Set from stored filterabe devices in values_dict
+                self.globals[FILTERABLE_DEVICES] = json.loads(values_dict["filterable_devices"])
+                # self.logger.info(f"FILTERABLE_DEVICES [JSON_LOADS]: {self.globals[FILTERABLE_DEVICES]}")
+
+            if len(nest_message_filter) == 0:
+                self.globals[FILTERS] = [u"-0-"]
+            else:
+                for entry in nest_message_filter:
+                    # self.logger.error(f"FILTER: {entry}")
+                    starling_hub_id_string, nest_device_id = entry.split("|||")
+                    if starling_hub_id_string == "-0-":  # Ignore '-- Don't Log Any Devices --'
+                        self.globals[FILTERS] = [u"-0-"]
+                        break
+                    elif starling_hub_id_string == "-1-":  # Ignore '-- Log All Devices --'
+                        self.globals[FILTERS] = [u"-1-"]
+                        log_message = f"{log_message}\n{spaces}All Nest Devices"
+                        filtering_required = True
+                        break
+                    elif starling_hub_id_string == "-2-":  # Ignore '-- Log Hub Device --'
+                        self.globals[FILTERS] = [u"-2-"]
+                        log_message = f"{log_message}\n{spaces}Hub Device(s)"
+                        filtering_required = True
+                    else:
+                        # starling_hub_id = int(starling_hub_id_string)
+                        # starling_hub_name = indigo.devices[starling_hub_id].name
+                        # name = self.globals[HUBS][starling_hub_id][NEST_DEVICES_BY_NEST_ID][nest_device_id][NEST_NAME]
+                        # where = self.globals[HUBS][starling_hub_id][NEST_DEVICES_BY_NEST_ID][nest_device_id][NEST_WHERE]
+                        # if where != "":
+                        #     where = f"-{where}"
+                        # nest_full_name = f"{name}{where}"
+
+                        starling_hub_and_nest_device_name_ui = self.globals[FILTERABLE_DEVICES][entry]
+                        self.globals[FILTERS].append(entry)
+                        spaces = " " * 24
+                        log_message = f"{log_message}\n{spaces}Nest Device: '{starling_hub_and_nest_device_name_ui}'"
+                        filtering_required = True
+
+            if filtering_required:
+                self.logger.warning(f"{log_message}\n")
+
+        except Exception as exception_error:
+            self.exception_handler(exception_error, True)  # Log error and display failing statement
+
+    def filterListNestDevices(self, filter="", valuesDict=None, typeId="", targetId=0):  # noqa [parameter value is not used]
+        try:
+            nest_devices_list = list()
+            self.globals[FILTERABLE_DEVICES] = dict()
+
+            nest_devices_list.append(("-0-|||-- Don't Log Any Devices --", "-- Don't Log Any Nest Devices --"))
+            nest_devices_list.append(("-1-|||-- Log All Devices --", "-- Log All Nest Devices --"))
+            nest_devices_list.append(("-2-|||-- Log Hub Device(s) --", "-- Log Hub Device(s) --"))
+
+            for hub_indigo_id in self.globals[HUBS].keys():
+                hub_indigo_id_string = f"{hub_indigo_id}"
+                hub_name = indigo.devices[hub_indigo_id].name
+                for nest_id, nest_devices_details in self.globals[HUBS][hub_indigo_id][NEST_DEVICES_BY_NEST_ID].items():
+                    name = nest_devices_details[NEST_NAME]
+                    where = f"{nest_devices_details[NEST_WHERE]}"
+                    if where != "":
+                        where = f"-{where}"
+                    nest_full_name = f"{name}{where}"
+                    hub_and_nest_device_name_key = f"{hub_indigo_id_string}|||{nest_id}"
+                    hub_and_nest_device_name_value = f"{hub_name} | {nest_full_name}"
+                    nest_devices_list.append((hub_and_nest_device_name_key, hub_and_nest_device_name_value))
+
+                    self.globals[FILTERABLE_DEVICES][hub_and_nest_device_name_key] = hub_and_nest_device_name_value
+
+            return sorted(nest_devices_list, key=lambda name: name[1].lower())   # sort by hubitat device name
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
 
@@ -751,12 +764,12 @@ class Plugin(indigo.PluginBase):
                 return
 
             # Register nest device in NEST_DEVICES_BY_NEST_ID
-            if nest_id not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID]:
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id] = dict()
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEV_ID] = dev.id
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEVICE_TYPE_ID] = dev.deviceTypeId
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_NAME] = dev.states["name"]
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_WHERE] = dev.states["where"]
+            # if nest_id not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID]:
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id] = dict()
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEV_ID] = dev.id
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEVICE_TYPE_ID] = dev.deviceTypeId
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_NAME] = dev.states["name"]
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_WHERE] = dev.states["where"]
 
             # Register sub-type devices in NEST_DEVICES_BY_INDIGO_DEVICE_ID
             if dev.id not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID]:
@@ -852,8 +865,6 @@ class Plugin(indigo.PluginBase):
             linked_dev.replaceOnServer()
 
             self.logger.warning(f"'{device_type_ui}' not enabled for {nest_dev.name}.\n    Device '{linked_dev_name}' ungrouped and renamed to '{ungrouped_name}'")
-
-
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -990,7 +1001,29 @@ class Plugin(indigo.PluginBase):
                     if starling_hub_indigo_id not in self.globals[HUBS]:
                         plugin_props["starling_hub_indigo_id"] = 0
 
-                self.globals[LIST_NEST_DEVICES_SELECTED] = False
+                if plugin_props["nest_id"] == "SELECT" or plugin_props["nest_id"] == "" or len(plugin_props["nest_id"]) < 4:  # TODO: Check this is reasonable?
+                    self.globals[LIST_NEST_DEVICES_SELECTED] = False
+                else:
+                    self.globals[LIST_NEST_DEVICES_SELECTED] = True
+
+            elif type_id in ("nestProtectMotion", "nestProtectCo", "nestThermostatHumidifier",
+                             "nestThermostatFan", "nestThermostatHotWater"):
+                # The following code sets the property "member_of_device_group" to True if the secondary device
+                #   is associated with a primary device. If not it is set to False. This property is used
+                #   in Devices.xml to display a red warning box and disable device editing if set to False.
+                plugin_props['member_of_device_group'] = False
+                plugin_props["primaryIndigoDevice"] = False
+                if dev_id in indigo.devices:
+                    dev_id_list = indigo.device.getGroupList(dev_id)
+                    if len(dev_id_list) > 1:
+                        plugin_props['member_of_device_group'] = True
+                        # for linked_dev_id in dev_id_list:
+                        #     linked_dev_props = indigo.devices[linked_dev_id].ownerProps
+                        #     primary_device = linked_dev_props.get("primaryIndigoDevice", False)
+                        #     if primary_device:
+                        #         plugin_props['linkedIndigoDeviceId'] = indigo.devices[linked_dev_id].id
+                        #         plugin_props['linkedIndigoDevice'] = indigo.devices[linked_dev_id].name
+                        #         plugin_props['associatedHubitatDevice'] = linked_dev_props["hubitatDevice"]
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -1220,6 +1253,14 @@ class Plugin(indigo.PluginBase):
                     values_dict["supportsTemperatureReporting"] = True
                 elif type_id == "nestHomeAwayControl":
                     pass
+            else:
+                # Assume a Secondary Device
+                if not values_dict.get("member_of_device_group", False):
+                    error_message = "You aren't allowed to Create and Save an ungrouped secondary device. Cancel and delete device."
+                    error_dict["warning"] = error_message
+                    error_dict["showAlertText"] = error_message
+                    return False, values_dict, error_dict
+
 
             return True, values_dict
 
@@ -1228,6 +1269,10 @@ class Plugin(indigo.PluginBase):
 
     def validate_prefs_config_ui(self, values_dict): # noqa [Method is not declared static]
         try:
+            # self.logger.info(f"FILTERABLE_DEVICES [JSON_DUMPS]: {self.globals[FILTERABLE_DEVICES]}")
+            filterable_devices_json = json.dumps(self.globals[FILTERABLE_DEVICES])
+            values_dict["filterable_devices"] = filterable_devices_json
+
             pass
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -1267,15 +1312,15 @@ class Plugin(indigo.PluginBase):
                 valuesDict["nest_id"] = "SELECT_HUB"  # -- FIRST SELECT --  # TODO: Check how to handle -1 [-SELECT-] for Nest device - 30-Mar-22
             elif starling_hub_indigo_id == 0:  # -- NONE --
                 valuesDict["nest_id"] = "NO_HUB"  # -- NONE --
-            elif  len(self.globals[LIST_NEST_DEVICES]) == 0:
+            elif len(self.globals[LIST_NEST_DEVICES]) == 0:
                 valuesDict["nest_id"] = "NO_NESTS"
-            elif len(self.globals[LIST_NEST_DEVICES]) == 1:
-                for nest_id in self.globals[LIST_NEST_DEVICES]:
-                    break
-                valuesDict["nest_id"] = nest_id
-            else:
-                if not self.globals[LIST_NEST_DEVICES_SELECTED]:
-                    valuesDict["nest_id"] = "SELECT_NEST"
+            # elif len(self.globals[LIST_NEST_DEVICES]) == 1:
+            #     for nest_id in self.globals[LIST_NEST_DEVICES]:
+            #         break
+            #     valuesDict["nest_id"] = nest_id
+            # else:
+            elif not self.globals[LIST_NEST_DEVICES_SELECTED]:
+                valuesDict["nest_id"] = "SELECT_NEST"
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -1360,12 +1405,10 @@ class Plugin(indigo.PluginBase):
                     nest_devices_list.append((nest_id, nest_list_entry))
                     self.globals[LIST_NEST_DEVICES].add(nest_id)
 
-            if len(nest_devices_list) > 1:
+            if len(nest_devices_list) > 0:
                 nest_devices_list.append(("SELECT_NEST", "-- SELECT NEST DEVICE --"))
                 # self.logger.info(f"LIST_NEST_DEVICES_SELECTED [2A]: {self.globals[LIST_NEST_DEVICES_SELECTED]}")
                 return sorted(nest_devices_list, key=lambda name: name[1].lower())   # sort by starling device name
-            elif len(nest_devices_list) == 1:
-                pass
             else:  # List empty
                 nest_devices_list.append(("NO_NESTS", f"No \"{typeId}\" devices available"))
             # self.logger.info(f"LIST_NEST_DEVICES_SELECTED [2B]: {self.globals[LIST_NEST_DEVICES_SELECTED]}")

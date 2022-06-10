@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Devices>
     <!-- Starling Hub -->
-    <Device id="starlingHub"  type="custom" subType="indigo.kDeviceSubType.Other">
+    <Device id="starlingHub"  type="custom" subType="indigo.kDeviceSubType.Other,ui=Hub">
         <Name>Starling Hub</Name>
         <ConfigUI>
             <Template file="Templates/template_starling_hub.xml" />

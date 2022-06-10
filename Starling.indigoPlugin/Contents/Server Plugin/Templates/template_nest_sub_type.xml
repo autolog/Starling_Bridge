@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Template>
     <SupportURL>https://forums.indigodomo.com/viewforum.php?f=369</SupportURL>
-    <Field id="member_of_device_group" type="checkbox" hidden="true"
+    <Field id="member_of_device_group" type="checkbox" hidden="true" default="false"
            tooltip="This is a flag for checking whether this secondary device is associated with a primary device.">
         <Label>Member of Device Group:</Label>
     </Field>
@@ -22,13 +22,13 @@
         <Label>Linked Primary Indigo Device:</Label>
     </Field>
 
-    <!-- Linked Indigo Device Id-->
-    <Field id="linkedPrimaryIndigoDeviceId" type="textfield" defaultValue="0" ReadOnly="YES" hidden="true" />
+<!--    &lt;!&ndash; Linked Indigo Device Id&ndash;&gt;-->
+<!--    <Field id="linkedPrimaryIndigoDeviceId" type="textfield" defaultValue="0" ReadOnly="YES" hidden="true" />-->
 
     <!-- Linked Nest Device -->
-    <Field id="associatedNestDevice" type="textfield" defaultValue="Some info ..." ReadOnly="YES"
+    <Field id="associatedNestDeviceId" type="textfield" defaultValue="Some info ..." ReadOnly="YES"
             visibleBindingId="member_of_device_group" visibleBindingValue="true"
-           tooltip="Associated Nest Device">
-        <Label>Associated Nest Device:</Label>
+           tooltip="Associated Nest Device Id">
+        <Label>Associated Nest Device Id:</Label>
     </Field>
 </Template>

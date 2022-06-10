@@ -30,7 +30,7 @@ def _no_image():
 # noinspection PyPep8Naming
 class Thread_Hub_Handler(threading.Thread):
 
-    # This class handles Hubitat Hub processing
+    # This class handles Starling Hub processing
 
     def __init__(self, plugin_globals, starling_hub_device_id, event):
         try:
@@ -41,7 +41,7 @@ class Thread_Hub_Handler(threading.Thread):
 
             self.starling_hub_device_id = starling_hub_device_id
 
-            self.hubHandlerLogger = logging.getLogger("Plugin.HE_HUB")
+            self.hubHandlerLogger = logging.getLogger("Plugin.HUB_HANDLER")
 
             self.threadStop = event
 
@@ -123,10 +123,6 @@ class Thread_Hub_Handler(threading.Thread):
                 except Exception as exception_error:
                     self.exception_handler(exception_error, True)  # Log error and display failing statement
                     break
-            else:
-                pass
-                # TODO: At this point, queue a recovery for n seconds time
-                # TODO: In the meanwhile, just disable and then enable the Indigo Hubitat Elevation Hub device
 
             self.hubHandlerLogger.debug("Hub Handler Thread close-down commencing.")
 
@@ -137,7 +133,7 @@ class Thread_Hub_Handler(threading.Thread):
         try:
             dev = indigo.devices[self.starling_hub_device_id]
 
-            status, result = self.access_starling_hub(dev, "status")
+            status, result = self.access_starling_hub(dev, GET_CONTROL_API_STATUS, "status")
 
             if status == "OK":
                 self.globals[HUBS][dev.id][STARLING_API_VERSION] = float(result["apiVersion"])
@@ -177,7 +173,7 @@ class Thread_Hub_Handler(threading.Thread):
                 return
 
             # Now detect Nest devices attached to the Starling Hub
-            status, result = self.access_starling_hub(dev, "devices")
+            status, result = self.access_starling_hub(dev, GET_CONTROL_API_DEVICES,"devices")
 
             if status == "OK":
                 # All is good
@@ -251,7 +247,7 @@ class Thread_Hub_Handler(threading.Thread):
 
             nest_device_command = f"devices/{nest_dev.address}"
 
-            status, result = self.access_starling_hub(starling_hub_dev, nest_device_command)
+            status, result = self.access_starling_hub(starling_hub_dev, GET_CONTROL_API_DEVICES_ID, nest_device_command)
 
             if status != "OK":
                 error_code = result[0]
@@ -263,6 +259,9 @@ class Thread_Hub_Handler(threading.Thread):
                 nest_dev.updateStatesOnServer(keyValueList)
                 nest_dev.updateStateImageOnServer(indigo.kStateImageSel.SensorOff)
 
+                starling_hub_dev.updateStatesOnServer(keyValueList)
+                starling_hub_dev.updateStateImageOnServer(indigo.kStateImageSel.SensorOff)
+
                 return
 
             else:
@@ -270,8 +269,16 @@ class Thread_Hub_Handler(threading.Thread):
 
                 # self.hubHandlerLogger.warning(f"HANDLE_DEVICES_COMMAND: Status={status},\nResult='{result}'")
 
-                keyValueList = list()
+                if starling_hub_dev.states["status"] != "Connected":
+                    keyValueList = list()
+                    keyValueList.append({"key": "status", "value": "Connected"})
+                    keyValueList.append({"key": "status_message", "value": "Connected"})
+                    starling_hub_dev.updateStatesOnServer(keyValueList)
 
+                    message_ui = f"{starling_hub_dev.name} successfully connected"
+                    self.hubHandlerLogger.info(message_ui)
+
+                keyValueList = list()
                 if nest_dev.states["status"] != "Connected":
                     keyValueList.append({"key": "status", "value": "Connected"})
                     keyValueList.append({"key": "status_message", "value": "Connected"})
@@ -948,9 +955,11 @@ class Thread_Hub_Handler(threading.Thread):
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
 
-    def access_starling_hub(self, starling_hub_dev, starling_command):
+    def access_starling_hub(self, starling_hub_dev, control_api, starling_command):
         try:
             # Connect to Starling Hub
+
+            previous_status_message = starling_hub_dev.states["status_message"]
 
             props = starling_hub_dev.pluginProps
             ip_address = props.get("starling_hub_ip", "127.0.0.1")  # Should be in format "nnn.nnn.nnn.nnn"
@@ -967,42 +976,96 @@ class Thread_Hub_Handler(threading.Thread):
             self.requests_suffix = f"?key={api_key}"
             requests_string = f"{self.requests_prefix}{starling_command}{self.requests_suffix}"
 
-            print(f"access_starling_hub Request String: {requests_string}")
+            # print(f"access_starling_hub Request String: {requests_string}")
 
             error_code = None
-            error_message = None
-
+            error_message_ui = ""
             try:
+                status_code = -1
                 reply = requests.get(requests_string, timeout=5)
-                print(f"Reply Status: {reply.status_code}, Text: {reply.text}")
+                reply.raise_for_status()
+                # print(f"Reply Status: {reply.status_code}, Text: {reply.text}")
                 status_code = reply.status_code
                 if status_code == 200:
                     pass
                 elif status_code == 400 or status_code == 401:
                     error_details = reply.json()
                     error_code = error_details["code"]
-                    error_message = error_details["message"]
+                    error_message_ui = error_details["message"]
                 elif status_code == 404:
                     error_code = "Not Found"
-                    error_message = "Starling Hub not found"
+                    error_message_ui = "Starling Hub not found"
                 else:
                     error_code = "Unknown"
-                    error_message = "unknown connection error"
-            except Exception as error_message:
-                status_code = -1
-                error_code = "Unknown"
-                error_message = error_message
+                    error_message_ui = "unknown connection error"
+            except requests.exceptions.HTTPError as error_message:
+                error_code = "HTTP Error"
+                error_message_ui = f"Access Starling Hub failed with an HTTP error. Retrying . . ."
+                if error_code != previous_status_message:
+                    self.hubHandlerLogger.error(error_message_ui)
+                return "Error", [error_code, error_message_ui]
+            except requests.exceptions.Timeout as error_message:
+                error_code = "Timeout Error"
+                error_message_ui = f"Access Starling Hub failed with a timeout error. Retrying . . ."
+                if error_code != previous_status_message:
+                    self.hubHandlerLogger.error(error_message_ui)
+                return "Error", [error_code, error_message_ui]
+            except requests.exceptions.ConnectionError as error_message:
+                error_code = "Connection Error"
+                error_message_ui = f"Access Starling Hub failed with a connection error. Retrying . . ."
+                if error_code != previous_status_message:
+                    self.hubHandlerLogger.error(error_message_ui)
+                return "Error", [error_code, error_message_ui]
+            except requests.exceptions.RequestException as error_message:
+                error_code = "OOps: Unknown error"
+                if error_code != previous_status_message:
+                    error_message_ui = f"Access Starling Hub failed with an unknown error. Retrying . . ."
+                    self.hubHandlerLogger.info(error_message_ui)
+                return "Error", [error_code, error_message_ui]
 
             if status_code == 200:
+                reply = reply.json()
+
+                # Check Filter
+                if FILTERS in self.globals:
+                    if len(self.globals[FILTERS]) > 0 and self.globals[FILTERS] != ["-0-"]:
+                        self.nest_filter_log_processing(starling_hub_dev.id, starling_hub_dev.name, control_api, reply)
+
                 status = "OK"
-                return status, reply.json()  # noqa [reply might be referenced before assignment]
+                return status, reply  # noqa [reply might be referenced before assignment]
+
             else:
+                # TODO: Sort this out!
                 status = "Error"
-                if error_message is None:
+                if error_message_ui is "":
                     self.hubHandlerLogger.error(f"Error [{status_code}] accessing Starling Hub '{starling_hub_dev.name}': {error_code}")
                 else:
-                    self.hubHandlerLogger.error(f"Error [{status_code}] accessing Starling Hub '{starling_hub_dev.name}': {error_code}\n{error_message}")
-                return status, [error_code, error_message]
+                    self.hubHandlerLogger.error(f"Error [{status_code}] accessing Starling Hub '{starling_hub_dev.name}': {error_code} - {error_message_ui}")
+                return status, [error_code, error_message_ui]
+
+        except Exception as exception_error:
+            self.exception_handler(exception_error, True)  # Log error and display failing statement
+
+    def nest_filter_log_processing(self, hub_id, hub_name, control_api, reply):
+        try:
+            log_nest_msg = False  # Assume Nest message should NOT be logged
+            # Check if MQTT message filtering required
+            if FILTERS in self.globals:
+                if len(self.globals[FILTERS]) > 0 and self.globals[FILTERS] != ["-0-"]:
+                    if self.globals[FILTERS] == ["-1-"]:
+                        log_nest_msg = True
+                    if self.globals[FILTERS] == ["-2-"]:
+                        if control_api in (GET_CONTROL_API_STATUS, GET_CONTROL_API_DEVICES):
+                            log_nest_msg = True
+                    else:
+                        if control_api == GET_CONTROL_API_DEVICES_ID:
+                            # self.hubHandlerLogger.info(f"REPLY [{type(reply)}: {reply}")
+                            nest_id = reply["properties"]["id"]
+                            nest_filter = f"{hub_id}|||{nest_id}"
+                            if nest_filter in self.globals[FILTERS]:
+                                log_nest_msg = True
+            if log_nest_msg:
+                self.hubHandlerLogger.starling_api(f"Received message from '{hub_name}':{reply}")  # noqa [Unresolved attribute reference]
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -1331,14 +1394,14 @@ class Thread_Hub_Handler(threading.Thread):
             self.requests_suffix = f"?key={api_key}"
             requests_string = f"{self.requests_prefix}{starling_command}{self.requests_suffix}"
 
-            print(f"update_starling_hub Request String: {requests_string}, Properties [{type(starling_properties)}]: {starling_properties}")
+            # print(f"update_starling_hub Request String: {requests_string}, Properties [{type(starling_properties)}]: {starling_properties}")
 
             error_code = None
             error_message = None
 
             try:
                 reply = requests.post(requests_string, json=starling_properties, timeout=5)
-                print(f"Reply Status: {reply.status_code}, Text: {reply.text}")
+                # print(f"Reply Status: {reply.status_code}, Text: {reply.text}")
                 status_code = reply.status_code
                 if status_code == 200:
                     pass
@@ -1442,7 +1505,7 @@ class Thread_Hub_Handler(threading.Thread):
                                                  description="",
                                                  name=secondary_name,
                                                  folder=primary_dev.folderId,
-                                                 pluginId="com.autologplugin.indigoplugin.starling",
+                                                 pluginId=self.globals[PLUGIN_INFO][PLUGIN_ID],
                                                  deviceTypeId="nestThermostatHumidifier",
                                                  groupWithDevice=primary_dev.id,
                                                  props=props_dict)
@@ -1454,6 +1517,7 @@ class Thread_Hub_Handler(threading.Thread):
             secondary_dev.replaceOnServer()
 
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][primary_dev.id][HUMIDIFIER_DEV_ID] = secondary_dev_id
+            self.globals[INDIGO_DEVICE_TO_HUB][secondary_dev_id] = hub_id
 
             return secondary_dev_id
 
@@ -1488,7 +1552,7 @@ class Thread_Hub_Handler(threading.Thread):
                                                  description="",
                                                  name=secondary_name,
                                                  folder=primary_dev.folderId,
-                                                 pluginId="com.autologplugin.indigoplugin.starling",
+                                                 pluginId=self.globals[PLUGIN_INFO][PLUGIN_ID],
                                                  deviceTypeId="nestThermostatFan",
                                                  groupWithDevice=primary_dev.id,
                                                  props=props_dict)
@@ -1500,6 +1564,7 @@ class Thread_Hub_Handler(threading.Thread):
             secondary_dev.replaceOnServer()
 
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][primary_dev.id][FAN_DEV_ID] = secondary_dev_id
+            self.globals[INDIGO_DEVICE_TO_HUB][secondary_dev_id] = hub_id
 
             return secondary_dev_id
 
@@ -1510,8 +1575,8 @@ class Thread_Hub_Handler(threading.Thread):
         try:
             props_dict = dict()
             props_dict["member_of_device_group"] = True
-            props_dict["linkedPrimaryIndigoDeviceId"] = primary_dev.id
-            props_dict["linkedPrimaryIndigoDeviceName"] = primary_dev.name
+            props_dict["linkedPrimaryIndigoDevice"] = primary_dev.name
+            props_dict["associatedNestDeviceId"] = primary_dev.address
             props_dict["SupportsOnState"] = True
             props_dict["AllowOnStateChange"] = True
             props_dict["SupportsStatusRequest"] = False
@@ -1534,7 +1599,7 @@ class Thread_Hub_Handler(threading.Thread):
                                                  description="",
                                                  name=secondary_name,
                                                  folder=primary_dev.folderId,
-                                                 pluginId="com.autologplugin.indigoplugin.starling",
+                                                 pluginId=self.globals[PLUGIN_INFO][PLUGIN_ID],
                                                  deviceTypeId="nestThermostatHotWater",
                                                  groupWithDevice=primary_dev.id,
                                                  props=props_dict)
@@ -1546,6 +1611,7 @@ class Thread_Hub_Handler(threading.Thread):
             secondary_dev.replaceOnServer()
 
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][primary_dev.id][HOT_WATER_DEV_ID] = secondary_dev_id
+            self.globals[INDIGO_DEVICE_TO_HUB][secondary_dev_id] = hub_id
 
             return secondary_dev_id
 
@@ -1580,7 +1646,7 @@ class Thread_Hub_Handler(threading.Thread):
                                                  description="",
                                                  name=secondary_name,
                                                  folder=primary_dev.folderId,
-                                                 pluginId="com.autologplugin.indigoplugin.starling",
+                                                 pluginId=self.globals[PLUGIN_INFO][PLUGIN_ID],
                                                  deviceTypeId="nestProtectCo",
                                                  groupWithDevice=primary_dev.id,
                                                  props=props_dict)
@@ -1592,6 +1658,7 @@ class Thread_Hub_Handler(threading.Thread):
             secondary_dev.replaceOnServer()
 
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][primary_dev.id][CO_DEV_ID] = secondary_dev_id
+            self.globals[INDIGO_DEVICE_TO_HUB][secondary_dev_id] = hub_id
 
             return secondary_dev_id
 
@@ -1625,7 +1692,7 @@ class Thread_Hub_Handler(threading.Thread):
                                                  description="",
                                                  name=secondary_name,
                                                  folder=primary_dev.folderId,
-                                                 pluginId="com.autologplugin.indigoplugin.starling",
+                                                 pluginId=self.globals[PLUGIN_INFO][PLUGIN_ID],
                                                  deviceTypeId="nestProtectMotion",
                                                  groupWithDevice=primary_dev.id,
                                                  props=props_dict)
@@ -1637,6 +1704,7 @@ class Thread_Hub_Handler(threading.Thread):
             secondary_dev.replaceOnServer()
 
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][primary_dev.id][MOTION_DEV_ID] = secondary_dev_id
+            self.globals[INDIGO_DEVICE_TO_HUB][secondary_dev_id] = hub_id
 
             return secondary_dev_id
 
