@@ -709,12 +709,12 @@ class Plugin(indigo.PluginBase):
                 return
 
             # Register nest device in NEST_DEVICES_BY_NEST_ID
-            if nest_id not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID]:
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id] = dict()
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEV_ID] = dev.id
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEVICE_TYPE_ID] = dev.deviceTypeId
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_NAME] = dev.states["name"]
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_WHERE] = dev.states["where"]
+            #if nest_id not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID]:
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id] = dict()
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEV_ID] = dev.id
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEVICE_TYPE_ID] = dev.deviceTypeId
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_NAME] = dev.states["name"]
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_WHERE] = dev.states["where"]
 
             # Register sub-type devices in NEST_DEVICES_BY_INDIGO_DEVICE_ID
             if dev.id not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID]:
@@ -844,20 +844,34 @@ class Plugin(indigo.PluginBase):
     def ungroup_linked_device(self, nest_dev, linked_dev):
         try:
             device_type_ui = "Unknown"
+            enabled_prop = ""
             if linked_dev.deviceTypeId == "nestThermostatHumidifier":
                 device_type_ui = "Humidifier"
+                enabled_prop = "humidifier_enabled"
             elif linked_dev.deviceTypeId == "nestThermostatFan":
                 device_type_ui = "Fan"
-            elif  linked_dev.deviceTypeId == "nestThermostatHotWater":
+                enabled_prop = "fan_enabled"
+            elif linked_dev.deviceTypeId == "nestThermostatHotWater":
                 device_type_ui = "Hot Water"
-            elif  linked_dev.deviceTypeId == "nestProtectMotion":
+                enabled_prop = "hot_water_enabled"
+            elif linked_dev.deviceTypeId == "nestProtectMotion":
                 device_type_ui = "Motion"
+                enabled_prop = "nest_occupancy_detected_enabled"
 
             linked_dev_name = linked_dev.name
 
             indigo.device.ungroupDevice(linked_dev)
             linked_dev.refreshFromServer()
             nest_dev.refreshFromServer()
+
+            props = linked_dev.ownerProps
+            props["member_of_device_group"] = False
+            linked_dev.replacePluginPropsOnServer(props)
+
+            if enabled_prop != "":
+                props = nest_dev.ownerProps
+                props[enabled_prop] = False
+                nest_dev.replacePluginPropsOnServer(props)
 
             ungrouped_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             ungrouped_name = f"{linked_dev.name} [UNGROUPED @ {ungrouped_time}]"
@@ -927,12 +941,12 @@ class Plugin(indigo.PluginBase):
                 return
 
             # Register nest device in NEST_DEVICES_BY_NEST_ID
-            if nest_id not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID]:
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id] = dict()
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEV_ID] = dev.id
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEVICE_TYPE_ID] = dev.deviceTypeId
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_NAME] = dev.states["name"]
-                self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_WHERE] = ""  # Was: dev.states["where"]
+            # if nest_id not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID]:
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id] = dict()
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEV_ID] = dev.id
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEVICE_TYPE_ID] = dev.deviceTypeId
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_NAME] = dev.states["name"]
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_WHERE] = ""  # Was: dev.states["where"]
 
             # Register sub-type devices in NEST_DEVICES_BY_INDIGO_DEVICE_ID
             if dev.id not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID]:

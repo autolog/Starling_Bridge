@@ -375,7 +375,7 @@ class Thread_Hub_Handler(threading.Thread):
                         keyValueList_co.append({"key": "status_message", "value": status_message})
                 else:
                     status = "CO"
-                    # self.hubHandlerLogger.critical(f"{status} detected by {nest_dev.name}")  # Now replaced by a trigger
+                    self.hubHandlerLogger.critical(f"{status} detected by {nest_dev.name}")  # Now replaced by a trigger
                     keyValueList_co.append({"key": "status", "value": status})
                     keyValueList_co.append({"key": "status_message", "value": f"{status} detected!"})
 
@@ -393,6 +393,10 @@ class Thread_Hub_Handler(threading.Thread):
             if nest_occupancy_detected is None:
                 if nest_dev_motion_id != 0:
                     # Force a restart of the Nest Protect device to update linked devices and remove linked Motion device
+                    props = nest_dev.ownerProps
+                    props["nest_occupancy_detected_enabled"] = False
+                    nest_dev.replacePluginPropsOnServer(props)
+
                     indigo.device.enable(nest_dev.id, value=False)  # disable
                     indigo.device.enable(nest_dev.id, value=True)  # enable
                     return
@@ -451,7 +455,7 @@ class Thread_Hub_Handler(threading.Thread):
 
                 if nest_smoke_detected:
                     status = "Smoke"
-                    # self.hubHandlerLogger.critical(f"{status} detected by {nest_dev.name}")  # Now replaced by a trigger
+                    self.hubHandlerLogger.critical(f"{status} detected by {nest_dev.name}")
                     keyValueList.append({"key": "status", "value": status})
                     keyValueList.append({"key": "status_message", "value": f"{status} detected!"})
                 elif nest_manual_test_active:
@@ -560,14 +564,22 @@ class Thread_Hub_Handler(threading.Thread):
             if "_starling_debug" in indigo.variables and indigo.variables["_starling_debug"].getValue(bool):
                 starling_debug_thermostat = indigo.variables["_starling_debug_thermostat"].getValue(bool)
                 if starling_debug_thermostat:
+                    if indigo.variables["starling_hot_water_enabled"].getValue(bool):
+                        nest_properties["hotWaterEnabled"] = indigo.variables["starling_hot_water"].getValue(bool)
+                    elif indigo.variables["starling_hot_water_disabled"].getValue(bool):
+                        if "hotWaterEnabled" in nest_properties:
+                            del nest_properties["hotWaterEnabled"]
                     nest_properties["canCool"] = indigo.variables["starling_can_cool"].getValue(bool)
+                    if nest_properties["canCool"]:
+                        nest_properties["targetCoolingThresholdTemperature"] = 25.0
+                        nest_properties["targetHeatingThresholdTemperature"] = 19.0
                     if indigo.variables["starling_eco_mode_enabled"].getValue(bool):
                         nest_properties["ecoMode"] = indigo.variables["starling_eco_mode"].getValue(bool)
                     elif indigo.variables["starling_eco_mode_disabled"].getValue(bool):
                         if "ecoMode" in nest_properties:
                             del nest_properties["ecoMode"]
                     if indigo.variables["starling_fan_running_enabled"].getValue(bool):
-                        nest_properties["fanRunning"] = indigo.variables["starling_eco_mode"].getValue(bool)
+                        nest_properties["fanRunning"] = indigo.variables["starling_fan_running"].getValue(bool)
                     if indigo.variables["starling_humidifier_enabled"].getValue(bool):
                         nest_properties["currentHumidifierState"] = indigo.variables["starling_humidifier_current_state"].value
                         nest_properties["humidifierActive"] = indigo.variables["starling_humidifier_active"].getValue(bool)
@@ -643,12 +655,18 @@ class Thread_Hub_Handler(threading.Thread):
             if nest_can_cool != supports_cool_setpoint:
                 nest_dev_props["SupportsCoolSetpoint"] = nest_can_cool
                 nest_dev.replacePluginPropsOnServer(nest_dev_props)
+            if supports_cool_setpoint:
+                if nest_dev.states["setpointCool"] != nest_target_cooling_threshold_temperature or (command == API_COMMAND_START_DEVICE):
+                    keyValueList.append({"key": "setpointCool", "value": nest_target_cooling_threshold_temperature})
 
             if (nest_dev.states["can_heat"] != nest_can_heat) or (command == API_COMMAND_START_DEVICE):
                 keyValueList.append({"key": "can_heat", "value": nest_can_heat})
             if nest_can_heat != nest_dev_props.get("supportsHeatSetpoint", False):
                 nest_dev_props["supportsHeatSetpoint"] = nest_can_heat
                 nest_dev.replacePluginPropsOnServer(nest_dev_props)
+            if nest_can_heat and nest_can_cool:
+                if nest_dev.states["setpointHeat"] != nest_target_heating_threshold_temperature or (command == API_COMMAND_START_DEVICE):
+                    keyValueList.append({"key": "setpointHeat", "value": nest_target_heating_threshold_temperature})
 
             if nest_eco_mode is not None:
                 if (nest_dev.states["eco_mode"] != nest_eco_mode) or (command == API_COMMAND_START_DEVICE):
@@ -719,8 +737,11 @@ class Thread_Hub_Handler(threading.Thread):
                     self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" temperature update to {nest_current_temperature_ui}")
 
             if (nest_dev.states["target_temperature"] != nest_target_temperature) or (command == API_COMMAND_START_DEVICE):
-                keyValueList.append({"key": "target_temperature", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
-                keyValueList.append({"key": "setpointHeat", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
+                if nest_can_cool:
+                    keyValueList.append({"key": "target_temperature", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
+                else:
+                    keyValueList.append({"key": "target_temperature", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
+                    keyValueList.append({"key": "setpointHeat", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
                 if not nest_dev_props.get("hideSetpointBroadcast", False):
                     self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set setpoint to {nest_target_temperature_ui}")
             if nest_can_cool:
@@ -1364,12 +1385,14 @@ class Thread_Hub_Handler(threading.Thread):
 
                 self.hubHandlerLogger.debug(f"Starling API: Status={status}, Result='{result}'")
 
-                if self.globals["developer_debug"]:
+                # DEBUG SETUP START ...
+                if "_starling_debug" in indigo.variables and indigo.variables["_starling_debug"].getValue(bool):
                     starling_debug_thermostat = indigo.variables["_starling_debug_thermostat"].getValue(bool)
                     if starling_debug_thermostat:
                         if indigo.variables["starling_humidifier_enabled"].getValue(bool):
                             var_humidifier_target_level = f"{humidifier_target_level}"
                             indigo.variable.updateValue("starling_humidifier_target_humidity", value=var_humidifier_target_level)
+                # .. DEBUG SETUP END
 
             pass
         except Exception as exception_error:
@@ -1400,10 +1423,12 @@ class Thread_Hub_Handler(threading.Thread):
             error_message = None
 
             try:
+                self.hubHandlerLogger.starling_api(f"Sending message from '{starling_hub_dev.name}':{requests_string} | {starling_properties}")  # noqa [Unresolved attribute reference]
                 reply = requests.post(requests_string, json=starling_properties, timeout=5)
                 # print(f"Reply Status: {reply.status_code}, Text: {reply.text}")
                 status_code = reply.status_code
                 if status_code == 200:
+                    # self.hubHandlerLogger.starling_api(f"Received message from '{starling_hub_dev.name}':{reply}")  # noqa [Unresolved attribute reference]
                     pass
                 elif status_code == 400 or status_code == 401:
                     error_details = reply.json()
@@ -1479,8 +1504,8 @@ class Thread_Hub_Handler(threading.Thread):
             # Humidifier device missing - create it
             props_dict = dict()
             props_dict["member_of_device_group"] = True
-            props_dict["linkedPrimaryIndigoDeviceId"] = primary_dev.id
-            props_dict["linkedPrimaryIndigoDeviceName"] = primary_dev.name
+            props_dict["linkedPrimaryIndigoDevice"] = primary_dev.name
+            props_dict["associatedNestDeviceId"] = primary_dev.address
             props_dict["SupportsOnState"] = True
             props_dict["AllowOnStateChange"] = True
             props_dict["SupportsStatusRequest"] = False
@@ -1528,8 +1553,8 @@ class Thread_Hub_Handler(threading.Thread):
         try:
             props_dict = dict()
             props_dict["member_of_device_group"] = True
-            props_dict["linkedPrimaryIndigoDeviceId"] = primary_dev.id
-            props_dict["linkedPrimaryIndigoDeviceName"] = primary_dev.name
+            props_dict["linkedPrimaryIndigoDevice"] = primary_dev.name
+            props_dict["associatedNestDeviceId"] = primary_dev.address
             props_dict["SupportsOnState"] = True
             props_dict["AllowOnStateChange"] = True
             props_dict["SupportsStatusRequest"] = False
@@ -1622,8 +1647,8 @@ class Thread_Hub_Handler(threading.Thread):
         try:
             props_dict = dict()
             props_dict["member_of_device_group"] = True
-            props_dict["linkedPrimaryIndigoDeviceId"] = primary_dev.id
-            props_dict["linkedPrimaryIndigoDeviceName"] = primary_dev.name
+            props_dict["linkedPrimaryIndigoDevice"] = primary_dev.name
+            props_dict["associatedNestDeviceId"] = primary_dev.address
             props_dict["SupportsOnState"] = True
             props_dict["AllowOnStateChange"] = True
             props_dict["SupportsStatusRequest"] = False
@@ -1668,8 +1693,9 @@ class Thread_Hub_Handler(threading.Thread):
     def create_motion_sensor_device(self, hub_id, primary_dev):
         try:
             props_dict = dict()
-            props_dict["linkedPrimaryIndigoDeviceId"] = primary_dev.id
-            props_dict["linkedPrimaryIndigoDeviceName"] = primary_dev.name
+            props_dict["member_of_device_group"] = True
+            props_dict["linkedPrimaryIndigoDevice"] = primary_dev.name
+            props_dict["associatedNestDeviceId"] = primary_dev.address
             props_dict["SupportsOnState"] = True
             props_dict["AllowOnStateChange"] = False
             props_dict["SupportsStatusRequest"] = False
@@ -1702,6 +1728,10 @@ class Thread_Hub_Handler(threading.Thread):
             secondary_dev = indigo.devices[secondary_dev_id]  # Refresh Indigo Device to ensure groupWith Device isn't removed
             secondary_dev.subType = indigo.kRelayDeviceSubType.PlugIn + ",ui=Motion"
             secondary_dev.replaceOnServer()
+
+            props = primary_dev.ownerProps
+            props["nest_occupancy_detected_enabled"] = True
+            primary_dev.replacePluginPropsOnServer(props)
 
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][primary_dev.id][MOTION_DEV_ID] = secondary_dev_id
             self.globals[INDIGO_DEVICE_TO_HUB][secondary_dev_id] = hub_id
