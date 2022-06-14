@@ -997,7 +997,7 @@ class Thread_Hub_Handler(threading.Thread):
                 https_ip_4 = https_ip[3]
                 self.requests_prefix = f"https://{https_ip_1}-{https_ip_2}-{https_ip_3}-{https_ip_4}.local.starling.direct:3443/api/connect/v1/"
             else:
-                self.requests_prefix = f"http://{ip_address}:3443/api/connect/v1/"  # noqa [http links are not secure]
+                self.requests_prefix = f"http://{ip_address}:3080/api/connect/v1/"  # noqa [http links are not secure]
             api_key = props.get("api_key", u"not_set_in_plugin")
             self.requests_suffix = f"?key={api_key}"
             requests_string = f"{self.requests_prefix}{starling_command}{self.requests_suffix}"
@@ -1417,7 +1417,7 @@ class Thread_Hub_Handler(threading.Thread):
                 https_ip_4 = https_ip[3]
                 self.requests_prefix = f"https://{https_ip_1}-{https_ip_2}-{https_ip_3}-{https_ip_4}.local.starling.direct:3443/api/connect/v1/"
             else:
-                self.requests_prefix = f"http://{ip_address}:3443/api/connect/v1/"  # noqa [http links are not secure]
+                self.requests_prefix = f"http://{ip_address}:3080/api/connect/v1/"  # noqa [http links are not secure]
             api_key = props.get("api_key", u"not_set_in_plugin")
             self.requests_suffix = f"?key={api_key}"
             requests_string = f"{self.requests_prefix}{starling_command}{self.requests_suffix}"
