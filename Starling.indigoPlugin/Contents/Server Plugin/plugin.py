@@ -132,6 +132,7 @@ class Plugin(indigo.PluginBase):
         self.indigo_log_handler.setLevel(LOG_LEVEL_INFO)   # Logging level for Indigo Event Log
 
         self.logger = logging.getLogger(u"Plugin.Starling")
+
         # Setup store for Starling identified Nest devices
         self.globals[HUBS] = dict()
         self.globals[EVENT] = dict()

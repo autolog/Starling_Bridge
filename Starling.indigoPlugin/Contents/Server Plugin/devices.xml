@@ -284,7 +284,7 @@
     </Device>
 
     <!-- Motion Sensor [Secondary] -->
-    <Device id="nestProtectMotion" type="sensor" subType="indigo.kSensorDeviceSubType.Motion">
+    <Device id="nestProtectMotion" type="sensor" subType="indigo.kSensorDeviceSubType.Motion" allowUserCreation="false">
         <Name>Nest Protect [Motion]</Name>
         <ConfigUI>
             <Template file="Templates/template_nest_sub_type.xml" />
@@ -304,7 +304,7 @@
 	</Device>
 
     <!-- CO Sensor [Secondary] -->
-    <Device id="nestProtectCo" type="sensor" subType="indigo.kSensorDeviceSubType.CO">
+    <Device id="nestProtectCo" type="sensor" subType="indigo.kSensorDeviceSubType.CO" allowUserCreation="false">
         <Name>Nest Protect [CO]</Name>
         <ConfigUI>
             <Template file="Templates/template_nest_sub_type.xml" />
@@ -325,7 +325,7 @@
 
 
     <!-- Humidifier [Secondary] -->
-    <Device id="nestThermostatHumidifier" type="dimmer" subType="indigo.kDimmerDeviceSubType.PlugIn">
+    <Device id="nestThermostatHumidifier" type="dimmer" subType="indigo.kDimmerDeviceSubType.PlugIn" allowUserCreation="false">
         <Name>Nest Thermostat [Humidifier]</Name>
         <ConfigUI>
             <Template file="Templates/template_nest_sub_type.xml" />
@@ -356,7 +356,7 @@
 	</Device>
 
     <!-- Fan [Secondary] -->
-    <Device id="nestThermostatFan" type="relay" subType="indigo.kRelayDeviceSubType.PlugIn">
+    <Device id="nestThermostatFan" type="relay" subType="indigo.kRelayDeviceSubType.PlugIn" allowUserCreation="false">
         <Name>Nest Thermostat [Fan]</Name>
         <ConfigUI>
             <Template file="Templates/template_nest_sub_type.xml" />
@@ -364,7 +364,7 @@
 	</Device>
 
     <!-- Hot Water [Secondary] -->
-    <Device id="nestThermostatHotWater" type="relay" subType="indigo.kRelayDeviceSubType.PlugIn">
+    <Device id="nestThermostatHotWater" type="relay" subType="indigo.kRelayDeviceSubType.PlugIn" allowUserCreation="false">
         <Name>Nest Thermostat [Hot Water]</Name>
         <ConfigUI>
             <Template file="Templates/template_nest_sub_type.xml" />

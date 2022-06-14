@@ -564,6 +564,8 @@ class Thread_Hub_Handler(threading.Thread):
             if "_starling_debug" in indigo.variables and indigo.variables["_starling_debug"].getValue(bool):
                 starling_debug_thermostat = indigo.variables["_starling_debug_thermostat"].getValue(bool)
                 if starling_debug_thermostat:
+                    if indigo.variables["starling_hvac_mode_enabled"].getValue(bool):
+                        nest_properties["hvacMode"] = indigo.variables["starling_hvac_mode"].value
                     if indigo.variables["starling_hot_water_enabled"].getValue(bool):
                         nest_properties["hotWaterEnabled"] = indigo.variables["starling_hot_water"].getValue(bool)
                     elif indigo.variables["starling_hot_water_disabled"].getValue(bool):
@@ -571,8 +573,8 @@ class Thread_Hub_Handler(threading.Thread):
                             del nest_properties["hotWaterEnabled"]
                     nest_properties["canCool"] = indigo.variables["starling_can_cool"].getValue(bool)
                     if nest_properties["canCool"]:
-                        nest_properties["targetCoolingThresholdTemperature"] = 25.0
-                        nest_properties["targetHeatingThresholdTemperature"] = 19.0
+                        nest_properties["targetCoolingThresholdTemperature"] = indigo.variables["starling_threshold_cooling"].getValue(float)
+                        nest_properties["targetHeatingThresholdTemperature"] = indigo.variables["starling_threshold_heating"].getValue(float)
                     if indigo.variables["starling_eco_mode_enabled"].getValue(bool):
                         nest_properties["ecoMode"] = indigo.variables["starling_eco_mode"].getValue(bool)
                     elif indigo.variables["starling_eco_mode_disabled"].getValue(bool):
@@ -648,6 +650,8 @@ class Thread_Hub_Handler(threading.Thread):
 
             nest_dev_props = nest_dev.pluginProps
 
+            # TODO: FINISH CHECKING can cool
+
             if (nest_dev.states["can_cool"] != nest_can_cool) or (command == API_COMMAND_START_DEVICE):
                 keyValueList.append({"key": "can_cool", "value": nest_can_cool})
 
@@ -655,18 +659,12 @@ class Thread_Hub_Handler(threading.Thread):
             if nest_can_cool != supports_cool_setpoint:
                 nest_dev_props["SupportsCoolSetpoint"] = nest_can_cool
                 nest_dev.replacePluginPropsOnServer(nest_dev_props)
-            if supports_cool_setpoint:
-                if nest_dev.states["setpointCool"] != nest_target_cooling_threshold_temperature or (command == API_COMMAND_START_DEVICE):
-                    keyValueList.append({"key": "setpointCool", "value": nest_target_cooling_threshold_temperature})
 
             if (nest_dev.states["can_heat"] != nest_can_heat) or (command == API_COMMAND_START_DEVICE):
                 keyValueList.append({"key": "can_heat", "value": nest_can_heat})
             if nest_can_heat != nest_dev_props.get("supportsHeatSetpoint", False):
                 nest_dev_props["supportsHeatSetpoint"] = nest_can_heat
                 nest_dev.replacePluginPropsOnServer(nest_dev_props)
-            if nest_can_heat and nest_can_cool:
-                if nest_dev.states["setpointHeat"] != nest_target_heating_threshold_temperature or (command == API_COMMAND_START_DEVICE):
-                    keyValueList.append({"key": "setpointHeat", "value": nest_target_heating_threshold_temperature})
 
             if nest_eco_mode is not None:
                 if (nest_dev.states["eco_mode"] != nest_eco_mode) or (command == API_COMMAND_START_DEVICE):
@@ -742,17 +740,24 @@ class Thread_Hub_Handler(threading.Thread):
                 else:
                     keyValueList.append({"key": "target_temperature", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
                     keyValueList.append({"key": "setpointHeat", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
-                if not nest_dev_props.get("hideSetpointBroadcast", False):
+                if (not nest_can_cool) and (not nest_dev_props.get("hideSetpointBroadcast", False)):
                     self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set setpoint to {nest_target_temperature_ui}")
+
             if nest_can_cool:
                 if (nest_dev.states["target_cooling_threshold_temperature"] != nest_target_cooling_threshold_temperature) or (command == API_COMMAND_START_DEVICE):
                     keyValueList.append({"key": "target_cooling_threshold_temperature", "value": nest_target_cooling_threshold_temperature,
                                          "uiValue": nest_target_cooling_threshold_temperature_ui})  # noqa
-                    # TODO: Output Message
+                    if nest_dev.states["setpointCool"] != nest_target_cooling_threshold_temperature or (command == API_COMMAND_START_DEVICE):
+                        keyValueList.append({"key": "setpointCool", "value": nest_target_cooling_threshold_temperature})
+                    if not nest_dev_props.get("hideSetpointBroadcast", False):
+                        self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set cooling threshold setpoint to {nest_target_cooling_threshold_temperature_ui}")
+
                 if (nest_dev.states["target_heating_threshold_temperature"] != nest_target_heating_threshold_temperature) or (command == API_COMMAND_START_DEVICE):
                     keyValueList.append({"key": "target_heating_threshold_temperature", "value": nest_target_heating_threshold_temperature,
                                          "uiValue": nest_target_heating_threshold_temperature_ui})  # noqa
-                    # TODO: Output Message
+                    keyValueList.append({"key": "setpointHeat", "value": nest_target_heating_threshold_temperature})
+                    if not nest_dev_props.get("hideSetpointBroadcast", False):
+                        self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set heating threshold setpoint to {nest_target_heating_threshold_temperature_ui}")
 
             if (nest_dev.states["hvac_mode"] != nest_hvac_mode) or (command == API_COMMAND_START_DEVICE):
                 keyValueList.append({"key": "hvac_mode", "value": nest_hvac_mode})
@@ -1130,7 +1135,7 @@ class Thread_Hub_Handler(threading.Thread):
             nest_dev_props = nest_dev.pluginProps
 
             temperature_units = nest_dev.states["display_temperature_units"]
-            # Note that updates to the Starling Hub must always be done in centigrade, so need to be converted if fahrenheit
+            # Note that updates to the Starling Hub must always be done in centigrade, so need to be converted if Fahrenheit
             if temperature_units == "F":
                 nest_thermostat_temperature_converted = round(float(((float(nest_thermostat_temperature) - 32.0) * 5.0) / 9.0), 1)
                 nest_thermostat_temperature_ui = f"{nest_thermostat_temperature}°F"
