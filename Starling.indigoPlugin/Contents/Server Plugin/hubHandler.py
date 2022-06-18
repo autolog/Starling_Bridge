@@ -314,6 +314,8 @@ class Thread_Hub_Handler(threading.Thread):
                     self.handle_devices_command_protect(command, hub_id, nest_dev, nest_properties, keyValueList)
                 elif nest_dev.deviceTypeId == "nestHomeAwayControl":
                     self.handle_devices_command_home_away_control(command, hub_id, nest_dev, nest_properties, keyValueList)
+                elif nest_dev.deviceTypeId == "nestWeather":
+                    self.handle_devices_command_weather(command, hub_id, nest_dev, nest_properties, keyValueList)
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -952,6 +954,62 @@ class Thread_Hub_Handler(threading.Thread):
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
 
+    def handle_devices_command_weather(self, command, hub_id, nest_dev, nest_properties, keyValueList):
+        try:
+
+            # Properties below already processed by invoking metheod:
+            #   nest_id = nest_properties["id"]
+            #   nest_name = nest_properties["name"]
+            #   nest_serial_number = nest_properties["serialNumber"]
+            #   nest_structure_name = nest_properties["structureName"]
+            #   nest_type = nest_properties["type"]
+            #   nest_where = nest_properties["where"]
+
+            # Weather specific properties
+            nest_current_temperature = nest_properties["currentTemperature"]
+            nest_humidity_percent = nest_properties["humidityPercent"]
+            nest_humidity_percent_ui = f"{nest_humidity_percent}%"
+
+            nest_dev_props = nest_dev.pluginProps
+            nest_display_temperature_units = nest_dev_props.get("temperature_units", "C")
+
+            if nest_display_temperature_units == "F":
+                nest_current_temperature = int(((float(nest_current_temperature) * 9) / 5) + 32.0)
+                nest_current_temperature_ui = f"{nest_current_temperature}°F"
+            else:
+                nest_current_temperature = round(nest_current_temperature, 1)
+                nest_current_temperature_ui = f"{nest_current_temperature}°C"
+
+            if (nest_dev.states["current_temperature"] != nest_current_temperature) or (command == API_COMMAND_START_DEVICE):
+                keyValueList.append({"key": "current_temperature", "value": nest_current_temperature, "uiValue": nest_current_temperature_ui})
+                keyValueList.append({"key": "sensorValue", "value": nest_current_temperature, "uiValue": nest_current_temperature_ui})
+                if not nest_dev_props.get("hideTemperatureBroadcast", False):
+                    self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" temperature update to {nest_current_temperature_ui}")
+
+            # Humidity Device Check
+            nest_dev_humidity_id = self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][HUMIDITY_DEV_ID]
+            if nest_dev_humidity_id == 0:
+                # Create Humidity device
+                nest_dev_humidity_id = self.create_humidity_sensor_device(hub_id, nest_dev)
+            nest_dev_humidity = indigo.devices[nest_dev_humidity_id]
+            keyValueList_humidity = list()
+
+            if (nest_dev_humidity.states["humidity_percent"] != nest_humidity_percent) or (command == API_COMMAND_START_DEVICE):
+                keyValueList_humidity.append({"key": "humidity_percent", "value": nest_humidity_percent, "uiValue": nest_humidity_percent_ui})
+                # Set Indigo required internal states: humidityInput1
+                keyValueList_humidity.append({"key": "sensorValue", "value": nest_humidity_percent, "uiValue": nest_humidity_percent_ui})
+                if not nest_dev_props.get("hideHumidityBroadcast", False):
+                    self.hubHandlerLogger.info(f"Received \"{nest_dev_humidity.name}\" humidity update to {nest_humidity_percent_ui}")
+
+            if len(keyValueList_humidity) > 0:
+                nest_dev_humidity.updateStatesOnServer(keyValueList_humidity)
+            if len(keyValueList) > 0:
+                nest_dev.updateStateImageOnServer(indigo.kStateImageSel.Auto)
+                nest_dev.updateStatesOnServer(keyValueList)
+
+        except Exception as exception_error:
+            self.exception_handler(exception_error, True)  # Log error and display failing statement
+
     def determine_secondary_device_id(self, dev_id, secondary_dev_type_id):
         try:
             dev_id_list = indigo.device.getGroupList(dev_id)
@@ -1499,6 +1557,8 @@ class Thread_Hub_Handler(threading.Thread):
                 return "nestLock"
             if nest_type == "home_away_control":
                 return "nestHomeAwayControl"
+            if nest_type == "weather":
+                return "nestWeather"
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -1688,6 +1748,53 @@ class Thread_Hub_Handler(threading.Thread):
             secondary_dev.replaceOnServer()
 
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][primary_dev.id][CO_DEV_ID] = secondary_dev_id
+            self.globals[INDIGO_DEVICE_TO_HUB][secondary_dev_id] = hub_id
+
+            return secondary_dev_id
+
+        except Exception as exception_error:
+            self.exception_handler(exception_error, True)  # Log error and display failing statement
+
+    def create_humidity_sensor_device(self, hub_id, primary_dev):
+        try:
+            props_dict = dict()
+            props_dict["member_of_device_group"] = True
+            props_dict["linkedPrimaryIndigoDevice"] = primary_dev.name
+            props_dict["associatedNestDeviceId"] = primary_dev.address
+            props_dict["SupportsOnState"] = False
+            props_dict["AllowOnStateChange"] = False
+            props_dict["SupportsStatusRequest"] = False
+            props_dict["SupportsSensorValue"] = True
+            props_dict["AllowSensorValueChange"] = False
+
+            secondary_name = f"{primary_dev.name} [Humidity]"  # Create default name
+            # Check name is unique and if not, make it so
+            if secondary_name in indigo.devices:
+                name_check_count = 1
+                while True:
+                    check_name = f"{secondary_name}_{name_check_count}"
+                    if check_name not in indigo.devices:
+                        secondary_name = check_name
+                        break
+                    name_check_count += 1
+
+            secondary_dev = indigo.device.create(protocol=indigo.kProtocol.Plugin,
+                                                 address=primary_dev.address,
+                                                 description="",
+                                                 name=secondary_name,
+                                                 folder=primary_dev.folderId,
+                                                 pluginId=self.globals[PLUGIN_INFO][PLUGIN_ID],
+                                                 deviceTypeId="nestWeatherHumidity",
+                                                 groupWithDevice=primary_dev.id,
+                                                 props=props_dict)
+
+            # Manually need to set the model and subModel names (for UI only)
+            secondary_dev_id = secondary_dev.id
+            secondary_dev = indigo.devices[secondary_dev_id]  # Refresh Indigo Device to ensure groupWith Device isn't removed
+            secondary_dev.subType = indigo.kRelayDeviceSubType.PlugIn + ",ui=Humidity"
+            secondary_dev.replaceOnServer()
+
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][primary_dev.id][HUMIDITY_DEV_ID] = secondary_dev_id
             self.globals[INDIGO_DEVICE_TO_HUB][secondary_dev_id] = hub_id
 
             return secondary_dev_id

@@ -283,6 +283,52 @@
         <UiDisplayStateId>status</UiDisplayStateId>
     </Device>
 
+    <Device id="nestWeather"  type="sensor" subType="indigo.kSensorDeviceSubType.Temperature">
+        <Name>Nest Weather</Name>
+        <ConfigUI>
+            <Template file="Templates/template_nest_weather.xml" />
+		</ConfigUI>
+        <States>
+            <State id="status">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+            <State id="status_message">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Status changed</TriggerLabel>
+                <ControlPageLabel>Status</ControlPageLabel>
+            </State>
+            <State id="where">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Where changed</TriggerLabel>
+                <ControlPageLabel>Where</ControlPageLabel>
+            </State>
+            <State id="name">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Name changed</TriggerLabel>
+                <ControlPageLabel>Name</ControlPageLabel>
+            </State>
+            <State id="serial_number">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Serial Number changed</TriggerLabel>
+                <ControlPageLabel>Serial Number</ControlPageLabel>
+            </State>
+            <State id="structure_name">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Structure Name changed</TriggerLabel>
+                <ControlPageLabel>Serial Number</ControlPageLabel>
+            </State>
+            <State id="current_temperature">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Current Temperatue changed</TriggerLabel>
+                <ControlPageLabel>Current Temperatue</ControlPageLabel>
+            </State>
+        </States>
+        <UiDisplayStateId>status</UiDisplayStateId>
+    </Device>
+
+
     <!-- Motion Sensor [Secondary] -->
     <Device id="nestProtectMotion" type="sensor" subType="indigo.kSensorDeviceSubType.Motion" allowUserCreation="false">
         <Name>Nest Protect [Motion]</Name>
@@ -371,5 +417,19 @@
 		</ConfigUI>
 	</Device>
 
+    <!-- Hot Water [Secondary] -->
+    <Device id="nestWeatherHumidity" type="sensor" subType="indigo.kSensorDeviceSubType.Humidity" allowUserCreation="false">
+        <Name>Nest Weather [Humidity]</Name>
+        <ConfigUI>
+            <Template file="Templates/template_nest_sub_type.xml" />
+		</ConfigUI>
+        <States>
+            <State id="humidity_percent">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Humidity Percent changed</TriggerLabel>
+                <ControlPageLabel>Humidity Percent Enabled</ControlPageLabel>
+            </State>
+        </States>
+	</Device>
 
 </Devices>

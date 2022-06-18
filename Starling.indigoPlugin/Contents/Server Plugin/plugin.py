@@ -11,9 +11,8 @@ try:
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-    cryptography_imported = True
 except ImportError:
-    cryptography_imported = False
+    raise ImportError("'cryptography' library missing.\n\n========> Run 'pip3 install cryptography' in Terminal window, then reload plugin. <========\n")
 
 from datetime import datetime
 import json
@@ -36,12 +35,12 @@ from constants import *  # Also imports logging
 from hubHandler import Thread_Hub_Handler
 
 # ================================== Header ===================================
-__author__    = u"Autolog"
-__copyright__ = u""
-__license__   = u"MIT"
-__build__     = u"unused"
-__title__     = u"Starling Bridge Plugin for Indigo"
-__version__   = u"unused"
+__author__    = "Autolog"
+__copyright__ = ""
+__license__   = "MIT"
+__build__     = "unused"
+__title__     = "Starling Bridge Plugin for Indigo"
+__version__   = "unused"
 
 
 def encode(unencrypted_password):
@@ -65,7 +64,7 @@ def encode(unencrypted_password):
 
 
 def decode(key, encrypted_password):
-    print(u"Decode, Arguments: Key='{0}', Encrypted Password='{1}'".format(key, encrypted_password))
+    print(f"Decode, Arguments: Key='{key}', Encrypted Password='{encrypted_password}'")
 
     f = Fernet(key)
     unencrypted_password = f.decrypt(encrypted_password)
@@ -131,7 +130,7 @@ class Plugin(indigo.PluginBase):
         self.plugin_file_handler.setLevel(LOG_LEVEL_INFO)  # Logging Level for plugin log file
         self.indigo_log_handler.setLevel(LOG_LEVEL_INFO)   # Logging level for Indigo Event Log
 
-        self.logger = logging.getLogger(u"Plugin.Starling")
+        self.logger = logging.getLogger("Plugin.Starling")
 
         # Setup store for Starling identified Nest devices
         self.globals[HUBS] = dict()
@@ -282,7 +281,7 @@ class Plugin(indigo.PluginBase):
                         new_target_level_ui = f"increase {device_ui} level by {increase_level_by}% to {new_target_level}%"
                         self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_HIGH, command_set_level, [dev.id], [new_target_level, new_target_level_ui]))
                     else:
-                        self.logger.info(u"Ignoring increase level request for {0} as device is already at the maximum level".format(dev.name))
+                        self.logger.info(f"Ignoring increase level request for {dev.name} as device is already at the maximum level")
 
                 # ##### DECREASE LEVEL BY ######
                 elif action.deviceAction == indigo.kDeviceAction.DimBy:
@@ -298,9 +297,9 @@ class Plugin(indigo.PluginBase):
 
                         self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_HIGH, command_set_level, [dev.id], [new_target_level, new_target_level_ui]))
                     else:
-                        self.logger.info(u"Ignoring decrease level request for {0} as device is already at the minimum level".format(dev.name))
+                        self.logger.info(f"Ignoring decrease level request for {dev.name} as device is already at the minimum level")
             else:
-                self.logger.warning(u"Unhandled \"actionControlDevice\" action \"{0}\" for \"{1}\"".format(action.deviceAction, dev.name))
+                self.logger.warning(f"Unhandled \"actionControlDevice\" action \"{action.deviceAction}\" for \"{dev.name}\"")
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -442,7 +441,7 @@ class Plugin(indigo.PluginBase):
             if not dev.enabled:
                 return
 
-            self.logger.warning(u"Action '{0}' on device '{1} is not supported by the plugin.".format(action.deviceAction, dev.name))
+            self.logger.warning(f"Action '{action.deviceAction}' on device '{dev.name} is not supported by the plugin.")
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -469,7 +468,7 @@ class Plugin(indigo.PluginBase):
                 self.logger.threaddebug(f"'closedDeviceConfigUi' called with userCancelled = {str(user_cancelled)}")
                 return
 
-            if type_id in ("nestProtect", "nestThermostat", "nestHomeAwayControl"):
+            if type_id in ("nestProtect", "nestThermostat", "nestHomeAwayControl", "nestWeather"):
                 starling_hub_device_id = int(values_dict.get("starling_hub_indigo_id", 0))
                 if starling_hub_device_id > 0:
                     if dev_id not in self.globals[HUBS][starling_hub_device_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID]:
@@ -511,8 +510,8 @@ class Plugin(indigo.PluginBase):
 
             # Set Starling Hub Message Filter
             self.globals[FILTERS] = list()  # Initialise Starling filter dictionary
-            nest_message_filter = values_dict.get("nestMessageFilter", [u"-0-|||-- Don't Log Any Devices --"])
-            log_message = u"Filtering active for the following Nest device(s):"  # Not used if no logging required
+            nest_message_filter = values_dict.get("nestMessageFilter", ["-0-|||-- Don't Log Any Devices --"])
+            log_message = "Filtering active for the following Nest device(s):"  # Not used if no logging required
             filtering_required = False
 
             spaces = " " * 35  # used to pad log messages
@@ -523,21 +522,21 @@ class Plugin(indigo.PluginBase):
                 # self.logger.info(f"FILTERABLE_DEVICES [JSON_LOADS]: {self.globals[FILTERABLE_DEVICES]}")
 
             if len(nest_message_filter) == 0:
-                self.globals[FILTERS] = [u"-0-"]
+                self.globals[FILTERS] = ["-0-"]
             else:
                 for entry in nest_message_filter:
                     # self.logger.error(f"FILTER: {entry}")
                     starling_hub_id_string, nest_device_id = entry.split("|||")
                     if starling_hub_id_string == "-0-":  # Ignore '-- Don't Log Any Devices --'
-                        self.globals[FILTERS] = [u"-0-"]
+                        self.globals[FILTERS] = ["-0-"]
                         break
                     elif starling_hub_id_string == "-1-":  # Ignore '-- Log All Devices --'
-                        self.globals[FILTERS] = [u"-1-"]
+                        self.globals[FILTERS] = ["-1-"]
                         log_message = f"{log_message}\n{spaces}All Nest Devices"
                         filtering_required = True
                         break
                     elif starling_hub_id_string == "-2-":  # Ignore '-- Log Hub Device --'
-                        self.globals[FILTERS] = [u"-2-"]
+                        self.globals[FILTERS] = ["-2-"]
                         log_message = f"{log_message}\n{spaces}Hub Device(s)"
                         filtering_required = True
                     else:
@@ -596,24 +595,26 @@ class Plugin(indigo.PluginBase):
             # "thermostat", "temp_sensor", "protect", "cam", "guard", "detect", "lock", "home_away_control"
 
             # Check Device Type and invoke appropriate method to start it
-            if dev.deviceTypeId == u"starlingHub":
+            if dev.deviceTypeId == "starlingHub":
                 self.device_start_comm_starling_hub(dev)
-            elif dev.deviceTypeId == u"nestProtect":
+            elif dev.deviceTypeId == "nestProtect":
                 self.device_start_comm_nest_protect(dev)
-            elif dev.deviceTypeId == u"nestThermostat":
+            elif dev.deviceTypeId == "nestThermostat":
                 self.device_start_comm_nest_thermostat(dev)
-            elif dev.deviceTypeId == u"nestTempSensor":
+            elif dev.deviceTypeId == "nestTempSensor":
                 self.device_start_comm_nest_temp_sensor(dev)
-            elif dev.deviceTypeId == u"nestCam":
+            elif dev.deviceTypeId == "nestCam":
                 self.device_start_comm_nest_cam(dev)
-            elif dev.deviceTypeId == u"nestGuard":
+            elif dev.deviceTypeId == "nestGuard":
                 self.device_start_comm_nest_guard(dev)
-            elif dev.deviceTypeId == u"nestDetect":
+            elif dev.deviceTypeId == "nestDetect":
                 self.device_start_comm_nest_detect(dev)
-            elif dev.deviceTypeId == u"nestLock":
+            elif dev.deviceTypeId == "nestLock":
                 self.device_start_comm_nest_lock(dev)
-            elif dev.deviceTypeId == u"nestHomeAwayControl":
+            elif dev.deviceTypeId == "nestHomeAwayControl":
                 self.device_start_comm_nest_home_away_control(dev)
+            elif dev.deviceTypeId == "nestWeather":
+                self.device_start_comm_nest_weather(dev)
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -640,7 +641,7 @@ class Plugin(indigo.PluginBase):
             props = dev.pluginProps
             starling_hub_ip = props.get("starling_hub_ip", "- Unknown -")
             if starling_hub_ip != dev.address:
-                props[u"address"] = starling_hub_ip
+                props["address"] = starling_hub_ip
                 dev.replacePluginPropsOnServer(props)
 
             keyValueList = [
@@ -677,10 +678,12 @@ class Plugin(indigo.PluginBase):
                 return "nestLock"
             if nest_type == "home_away_control":
                 return "nestHomeAwayControl"
+            if nest_type == "weather":
+                return "nestWeather"
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
-            return u""
+            return ""
 
     def device_start_comm_nest_protect(self, dev):
         try:
@@ -698,7 +701,7 @@ class Plugin(indigo.PluginBase):
                 self.logger.error(f"Warning: Nest id missing for {dev.name}")
                 return
             elif nest_id != dev.address:
-                props[u"address"] = nest_id
+                props["address"] = nest_id
                 dev.replacePluginPropsOnServer(props)
 
             hub_id = int(props.get("starling_hub_indigo_id", 0))
@@ -753,7 +756,7 @@ class Plugin(indigo.PluginBase):
                 self.logger.error(f"Warning: Nest id missing for {dev.name}")
                 return
             elif nest_id != dev.address:
-                props[u"address"] = nest_id
+                props["address"] = nest_id
                 dev.replacePluginPropsOnServer(props)
 
             hub_id = int(props.get("starling_hub_indigo_id", 0))
@@ -780,6 +783,58 @@ class Plugin(indigo.PluginBase):
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][HUMIDIFIER_DEV_ID] = 0
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][FAN_DEV_ID] = 0
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][HOT_WATER_DEV_ID] = 0
+
+            self.check_grouped_devices(hub_id, dev)  # Check grouped devices and ungroup if necessary
+
+            self.globals[INDIGO_DEVICE_TO_HUB][dev.id] = hub_id
+
+            if hub_id in self.globals[QUEUES]:
+                self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_MEDIUM, API_COMMAND_START_DEVICE, [dev.id], None))
+            else:
+                self.logger.error(f"Warning: Starling Hub queue missing for {dev.name}")
+
+        except Exception as exception_error:
+            self.exception_handler(exception_error, True)  # Log error and display failing statement
+
+    def device_start_comm_nest_weather(self, dev):
+        try:
+            keyValueList = [
+                {"key": "status", "value": "Connecting"},
+                {"key": "status_message", "value": "Connecting ..."},
+                {"key": "sensorValue", "value": 0, "uiValue": "Disconnected"}
+            ]
+            dev.updateStatesOnServer(keyValueList)
+            dev.updateStateImageOnServer(indigo.kStateImageSel.TimerOn)
+
+            props = dev.pluginProps
+            nest_id = props.get("nest_id", "")
+            if nest_id == "":
+                self.logger.error(f"Warning: Nest id missing for {dev.name}")
+                return
+            elif nest_id != dev.address:
+                props["address"] = nest_id
+                dev.replacePluginPropsOnServer(props)
+
+            hub_id = int(props.get("starling_hub_indigo_id", 0))
+            if hub_id == 0:
+                self.logger.error(f"Starling Hub id not setup for {dev.name}; Edit the device to specify Starling Hub")
+                return
+            elif hub_id not in indigo.devices:
+                self.logger.error(f"{dev.name} has an assigned Starling Hub that is no longer present in Indigo Devices; Has the Hub been deleted?")
+                return
+
+            # Register nest device in NEST_DEVICES_BY_NEST_ID
+            # if nest_id not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID]:
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id] = dict()
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEV_ID] = dev.id
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][INDIGO_DEVICE_TYPE_ID] = dev.deviceTypeId
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_NAME] = dev.states["name"]
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_NEST_ID][nest_id][NEST_WHERE] = dev.states["where"]
+
+            # Register sub-type devices in NEST_DEVICES_BY_INDIGO_DEVICE_ID
+            if dev.id not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID]:
+                self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id] = dict()
+                self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][NEST_ID] = nest_id
 
             self.check_grouped_devices(hub_id, dev)  # Check grouped devices and ungroup if necessary
 
@@ -835,9 +890,14 @@ class Plugin(indigo.PluginBase):
                                     self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][MOTION_DEV_ID] = linked_dev_id
                                     self.globals[INDIGO_DEVICE_TO_HUB][linked_dev_id] = hub_id
                                 else:
-                                    # Ungroup linked Humidifier Device
+                                    # Ungroup linked Motion Device
                                     self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][MOTION_DEV_ID] = 0
                                     self.ungroup_linked_device(nest_dev, linked_dev)
+                        elif nest_dev.deviceTypeId == "nestWeather":
+                            if linked_dev.deviceTypeId == "nestWeatherHumidity":
+                                self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][HUMIDITY_DEV_ID] = linked_dev_id
+                                self.globals[INDIGO_DEVICE_TO_HUB][linked_dev_id] = hub_id
+
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -930,7 +990,7 @@ class Plugin(indigo.PluginBase):
                 self.logger.error(f"Warning: Nest id missing for {dev.name}")
                 return
             elif nest_id != dev.address:
-                props[u"address"] = nest_id
+                props["address"] = nest_id
                 dev.replacePluginPropsOnServer(props)
 
             hub_id = int(props.get("starling_hub_indigo_id", 0))
@@ -966,11 +1026,11 @@ class Plugin(indigo.PluginBase):
 
     def device_stop_comm(self, dev):
         try:
-            # self.logger.info(u"Device '{0}' Stopped".format(dev.name))
+            # self.logger.info(f"Device '{dev.name}' Stopped")
 
-            if dev.deviceTypeId in ("nestProtect", "nestThermostat", "nestHomeAwayControl"):
+            if dev.deviceTypeId in ("nestProtect", "nestThermostat", "nestHomeAwayControl", "nestWeather"):
                 props = dev.pluginProps
-                hub_id = props.get(u"starling_hub_indigo_id", 0)
+                hub_id = props.get("starling_hub_indigo_id", 0)
                 if hub_id != 0:
                     if hub_id in self.globals[HUBS]:
                         if dev.id in self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID]:
@@ -1005,7 +1065,7 @@ class Plugin(indigo.PluginBase):
 
     def get_device_config_ui_values(self, plugin_props, type_id="", dev_id=0):
         try:
-            if type_id in ("nestProtect", "nestThermostat", "nestHomeAwayControl"):
+            if type_id in ("nestProtect", "nestThermostat", "nestHomeAwayControl", "nestWeather"):
                 if "starling_hub_indigo_id" not in plugin_props or plugin_props["starling_hub_indigo_id"] == "":
                     plugin_props["starling_hub_indigo_id"] = -1  # -- SELECT --
                 if "nest_id" not in plugin_props or plugin_props["nest_id"] == "":
@@ -1022,7 +1082,7 @@ class Plugin(indigo.PluginBase):
                     self.globals[LIST_NEST_DEVICES_SELECTED] = True
 
             elif type_id in ("nestProtectMotion", "nestProtectCo", "nestThermostatHumidifier",
-                             "nestThermostatFan", "nestThermostatHotWater"):
+                             "nestThermostatFan", "nestThermostatHotWater", "nestWeatherHumidity"):
                 # The following code sets the property "member_of_device_group" to True if the secondary device
                 #   is associated with a primary device. If not it is set to False. This property is used
                 #   in Devices.xml to display a red warning box and disable device editing if set to False.
@@ -1142,21 +1202,17 @@ class Plugin(indigo.PluginBase):
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
 
-        # self.logger.warning(u"Starling runConcurrentThread SHUTDOWN")
+        # self.logger.warning("Starling runConcurrentThread SHUTDOWN")
 
     def shutdown(self):
         try:
             pass
-            # self.logger.warning(u"Starling SHUTDOWN")
+            # self.logger.warning("Starling SHUTDOWN")
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
 
     def startup(self):
         try:
-            if not cryptography_imported:
-                self.stopPlugin("Python package cryptography is required. Run command 'pip3 install cryptography' in terminal and restart plugin.")
-                return
-
             # self.debug = False
 
             # First list and process all Starling Hubs
@@ -1173,7 +1229,7 @@ class Plugin(indigo.PluginBase):
 
             # Secondly, then process all Starling Nest devices
             for dev in indigo.devices.iter("self"):
-                if dev.deviceTypeId in ("nestProtect", "nestThermostat", "nestHomeAwayControl"):  # TODO: More to be added - 30-Mar-2022
+                if dev.deviceTypeId in ("nestProtect", "nestThermostat", "nestHomeAwayControl", "nestWeather"):  # TODO: More to be added - 30-Mar-2022
                     if dev.enabled:
                         props = dev.pluginProps
                         hub_id = int(props.get("starling_hub_indigo_id", 0))
@@ -1197,6 +1253,8 @@ class Plugin(indigo.PluginBase):
                                 elif dev.deviceTypeId == "nestProtect":
                                     self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][CO_DEV_ID] = 0
                                     self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][MOTION_DEV_ID] = 0
+                                elif dev.deviceTypeId == "nestWeather":
+                                    self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][HUMIDITY_DEV_ID] = 0
 
                                 self.check_grouped_devices(hub_id, dev)
                                 
@@ -1211,7 +1269,7 @@ class Plugin(indigo.PluginBase):
 
     def stop_concurrent_thread(self):
         try:
-            # self.logger.info(u"Starling plugin closing down")
+            # self.logger.info("Starling plugin closing down")
             for starling_hub_dev_id in self.globals[HUBS]:
                 self.globals[QUEUES][starling_hub_dev_id].put((QUEUE_PRIORITY_STOP_THREAD, STOP_THREAD, None, None))
             self.stopThread = True
@@ -1234,7 +1292,7 @@ class Plugin(indigo.PluginBase):
             if type_id == "starlingHub":
                 pass
 
-            elif type_id in ("nestProtect", "nestThermostat", "nestHomeAwayControl"):
+            elif type_id in ("nestProtect", "nestThermostat", "nestHomeAwayControl", "nestWeather"):
                 if values_dict["starling_hub_indigo_id"] in (-2,-1,0):
                     error_message = "Starling Hub is not valid. Select a Starling Hub or Cancel"
                     error_dict["starling_hub_indigo_id"] = error_message
@@ -1268,6 +1326,14 @@ class Plugin(indigo.PluginBase):
                     values_dict["supportsTemperatureReporting"] = True
                 elif type_id == "nestHomeAwayControl":
                     pass
+                elif type_id == "nestWeather":
+                    values_dict["SupportsBatteryLevel"] = False
+                    values_dict["SupportsOnState"] = False
+                    # values_dict["NumHumidityInputs"] = 1
+                    values_dict["NumTemperatureInputs"] = 1
+                    values_dict["SupportsSensorValue"] = True
+                    values_dict["SupportsStatusRequest"] = True
+                    values_dict["supportsTemperatureReporting"] = True
             else:
                 # Assume a Secondary Device
                 if not values_dict.get("member_of_device_group", False):
@@ -1275,7 +1341,6 @@ class Plugin(indigo.PluginBase):
                     error_dict["warning"] = error_message
                     error_dict["showAlertText"] = error_message
                     return False, values_dict, error_dict
-
 
             return True, values_dict
 
@@ -1370,7 +1435,7 @@ class Plugin(indigo.PluginBase):
             #   typeId is the device type specified in the Devices.xml
             #   devId is the device ID - 0 if it's a new device
             self.globals[LIST_NEST_DEVICES_SELECTED] = False
-            self.logger.debug(u"Starling Hub Selected: {0}".format(valuesDict["starling_hub_indigo_id"]))
+            self.logger.debug(f"Starling Hub Selected: {valuesDict['starling_hub_indigo_id']}")
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -1444,7 +1509,7 @@ class Plugin(indigo.PluginBase):
                     # self.logger.info(f"LIST_NEST_DEVICES_SELECTED [3]: {self.globals[LIST_NEST_DEVICES_SELECTED]}")
 
             pass
-            # TODO: Check this - 30-Mar-22 = self.logger.debug(u"Starling Hub Selected: {0}".format(valuesDict["starlingHubId"]))
+            # TODO: Check this - 30-Mar-22 = self.logger.debug(f"Starling Hub Selected: {valuesDict['starlingHubId']}")
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -1466,7 +1531,7 @@ class Plugin(indigo.PluginBase):
                 requests_prefix = (f"https://{https_ip_1}-{https_ip_2}-{https_ip_3}-{https_ip_4}.local.starling.direct:3443/api/connect/v1/")
             else:
                 requests_prefix = f"http://{ip_address}:3443/api/connect/v1/"  # noqa [http links are not secure]
-            api_key = props.get("api_key", u"not_set_in_plugin")
+            api_key = props.get("api_key", "not_set_in_plugin")
             requests_suffix = f"?key={api_key}"
             requests_string = f"{requests_prefix}{starling_command}{requests_suffix}"
 
