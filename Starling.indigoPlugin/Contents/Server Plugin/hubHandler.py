@@ -804,6 +804,8 @@ class Thread_Hub_Handler(threading.Thread):
                     self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" humidity update to {nest_humidity_percent_ui}")
 
             # Humidifier Device Check
+            if HUMIDIFIER_DEV_ID not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id]:
+                self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][HUMIDIFIER_DEV_ID] = 0
             nest_dev_humidifier_id = self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][HUMIDIFIER_DEV_ID]
             if nest_humidifier_active is None:
                 if nest_dev_humidifier_id != 0:
@@ -855,6 +857,8 @@ class Thread_Hub_Handler(threading.Thread):
                     nest_dev_humidifier.updateStatesOnServer(keyValueList_humidifier)
 
             # Fan Device Check
+            if FAN_DEV_ID not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id]:
+                self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][FAN_DEV_ID] = 0
             nest_dev_fan_id = self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][FAN_DEV_ID]
             if nest_fan_running is None:
                 if nest_dev_fan_id != 0:
@@ -885,6 +889,8 @@ class Thread_Hub_Handler(threading.Thread):
                     nest_dev_fan.updateStatesOnServer(keyValueList_fan)
 
             # Hot Water Device Check
+            if HOT_WATER_DEV_ID not in self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id]:
+                self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][HOT_WATER_DEV_ID] = 0
             nest_dev_hot_water_id = self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][HOT_WATER_DEV_ID]
             if nest_hot_water_enabled is None:
                 if nest_dev_hot_water_id != 0:
@@ -987,7 +993,10 @@ class Thread_Hub_Handler(threading.Thread):
                     self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" temperature update to {nest_current_temperature_ui}")
 
             # Humidity Device Check
-            nest_dev_humidity_id = self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][HUMIDITY_DEV_ID]
+            if HUMIDITY_DEV_ID in self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id]:
+                nest_dev_humidity_id = self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][HUMIDITY_DEV_ID]
+            else:
+                nest_dev_humidity_id = 0
             if nest_dev_humidity_id == 0:
                 # Create Humidity device
                 nest_dev_humidity_id = self.create_humidity_sensor_device(hub_id, nest_dev)
