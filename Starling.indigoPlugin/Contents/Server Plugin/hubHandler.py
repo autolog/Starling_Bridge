@@ -741,43 +741,9 @@ class Thread_Hub_Handler(threading.Thread):
                 if not nest_dev_props.get("hideTemperatureBroadcast", False):
                     self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" temperature update to {nest_current_temperature_ui}")
 
-            if (nest_dev.states["target_temperature"] != nest_target_temperature) or (command == API_COMMAND_START_DEVICE):
-                keyValueList.append({"key": "target_temperature", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
-                if nest_can_cool:
-                    if nest_hvac_mode == "cool":
-                        keyValueList.append({"key": "setpointCool", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
-                        info_message_part_of = "cooling"
-                    elif nest_hvac_mode == "heat":
-                        keyValueList.append({"key": "setpointHeat", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
-                        info_message_part_of = "heating"
-                    else:
-                        info_message_part_of = ""
-                else:
-                    keyValueList.append({"key": "setpointHeat", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
-                    info_message_part_of = "heating"
-                if (not nest_dev_props.get("hideSetpointBroadcast", False)) and info_message_part_of != "":
-                    self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set {info_message_part_of} setpoint to {nest_target_temperature_ui}")
-
-            if nest_can_cool:
-                if (nest_dev.states["target_cooling_threshold_temperature"] != nest_target_cooling_threshold_temperature) or (command == API_COMMAND_START_DEVICE):
-                    keyValueList.append({"key": "target_cooling_threshold_temperature", "value": nest_target_cooling_threshold_temperature,
-                                         "uiValue": nest_target_cooling_threshold_temperature_ui})  # noqa
-                    if nest_hvac_mode == "heatCool":
-                        if nest_dev.states["setpointCool"] != nest_target_cooling_threshold_temperature or (command == API_COMMAND_START_DEVICE):
-                            keyValueList.append({"key": "setpointCool", "value": nest_target_cooling_threshold_temperature})
-                    if not nest_dev_props.get("hideSetpointBroadcast", False):
-                        self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set cooling threshold setpoint to {nest_target_cooling_threshold_temperature_ui}")
-
-                if (nest_dev.states["target_heating_threshold_temperature"] != nest_target_heating_threshold_temperature) or (command == API_COMMAND_START_DEVICE):
-                    keyValueList.append({"key": "target_heating_threshold_temperature", "value": nest_target_heating_threshold_temperature,
-                                         "uiValue": nest_target_heating_threshold_temperature_ui})  # noqa
-                    if nest_hvac_mode == "heatCool":
-                        if nest_dev.states["setpointHeat"] != nest_target_heating_threshold_temperature or (command == API_COMMAND_START_DEVICE):
-                            keyValueList.append({"key": "setpointHeat", "value": nest_target_heating_threshold_temperature})
-                    if not nest_dev_props.get("hideSetpointBroadcast", False):
-                        self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set heating threshold setpoint to {nest_target_heating_threshold_temperature_ui}")
-
+            hvac_mode_changed = False
             if (nest_dev.states["hvac_mode"] != nest_hvac_mode) or (command == API_COMMAND_START_DEVICE):
+                hvac_mode_changed = True
                 keyValueList.append({"key": "hvac_mode", "value": nest_hvac_mode})
 
                 # TODO: Enhance following code.
@@ -811,6 +777,44 @@ class Thread_Hub_Handler(threading.Thread):
                 else:  # Assume: nest_hvac_state = 'off'
                     keyValueList.append({"key": "hvacHeaterIsOn", "value": False})
                     keyValueList.append({"key": "hvacCoolerIsOn", "value": False})
+
+
+
+            if (nest_dev.states["target_temperature"] != nest_target_temperature) or (command == API_COMMAND_START_DEVICE) or hvac_mode_changed:
+                keyValueList.append({"key": "target_temperature", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
+                if nest_can_cool:
+                    if nest_hvac_mode == "cool":
+                        keyValueList.append({"key": "setpointCool", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
+                        info_message_part_of = "cooling"
+                    elif nest_hvac_mode == "heat":
+                        keyValueList.append({"key": "setpointHeat", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
+                        info_message_part_of = "heating"
+                    else:
+                        info_message_part_of = ""
+                else:
+                    keyValueList.append({"key": "setpointHeat", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
+                    info_message_part_of = "heating"
+                if (not nest_dev_props.get("hideSetpointBroadcast", False)) and info_message_part_of != "":
+                    self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set {info_message_part_of} setpoint to {nest_target_temperature_ui}")
+
+            if nest_can_cool:
+                if (nest_dev.states["target_cooling_threshold_temperature"] != nest_target_cooling_threshold_temperature) or (command == API_COMMAND_START_DEVICE) or hvac_mode_changed:
+                    keyValueList.append({"key": "target_cooling_threshold_temperature", "value": nest_target_cooling_threshold_temperature,
+                                         "uiValue": nest_target_cooling_threshold_temperature_ui})  # noqa
+                    if nest_hvac_mode == "heatCool":
+                        if nest_dev.states["setpointCool"] != nest_target_cooling_threshold_temperature or (command == API_COMMAND_START_DEVICE):
+                            keyValueList.append({"key": "setpointCool", "value": nest_target_cooling_threshold_temperature})
+                    if not nest_dev_props.get("hideSetpointBroadcast", False):
+                        self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set cooling threshold setpoint to {nest_target_cooling_threshold_temperature_ui}")
+
+                if (nest_dev.states["target_heating_threshold_temperature"] != nest_target_heating_threshold_temperature) or (command == API_COMMAND_START_DEVICE) or hvac_mode_changed:
+                    keyValueList.append({"key": "target_heating_threshold_temperature", "value": nest_target_heating_threshold_temperature,
+                                         "uiValue": nest_target_heating_threshold_temperature_ui})  # noqa
+                    if nest_hvac_mode == "heatCool":
+                        if nest_dev.states["setpointHeat"] != nest_target_heating_threshold_temperature or (command == API_COMMAND_START_DEVICE):
+                            keyValueList.append({"key": "setpointHeat", "value": nest_target_heating_threshold_temperature})
+                    if not nest_dev_props.get("hideSetpointBroadcast", False):
+                        self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set heating threshold setpoint to {nest_target_heating_threshold_temperature_ui}")
 
             if (nest_dev.states["humidity_percent"] != nest_humidity_percent) or (command == API_COMMAND_START_DEVICE):
                 keyValueList.append({"key": "humidity_percent", "value": nest_humidity_percent, "uiValue": nest_humidity_percent_ui})
