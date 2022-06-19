@@ -77,8 +77,9 @@ class Thread_Hub_Handler(threading.Thread):
                     elif command in [SET_TARGET_TEMPERATURE, SET_TARGET_COOLING_THRESHOLD_TEMPERATURE, SET_TARGET_HEATING_THRESHOLD_TEMPERATURE]:
                         nest_dev_id = nest_device_list[0]
                         target_temperature = argument_list[0]
-                        log_action_name = argument_list[1]
-                        self.set_thermostat_temperature(command, nest_dev_id, target_temperature, log_action_name)
+                        state_key = argument_list[1]
+                        log_action_name = argument_list[2]
+                        self.set_thermostat_temperature(command, nest_dev_id, target_temperature, state_key, log_action_name)
                     elif command == SET_HVAC_MODE:
                         nest_dev_id = nest_device_list[0]
                         hvac_mode_translated = argument_list[0]
@@ -568,6 +569,7 @@ class Thread_Hub_Handler(threading.Thread):
                 if starling_debug_thermostat:
                     if indigo.variables["starling_hvac_mode_enabled"].getValue(bool):
                         nest_properties["hvacMode"] = indigo.variables["starling_hvac_mode"].value
+                        nest_properties["hvacState"] = indigo.variables["starling_hvac_state"].value
                     if indigo.variables["starling_hot_water_enabled"].getValue(bool):
                         nest_properties["hotWaterEnabled"] = indigo.variables["starling_hot_water"].getValue(bool)
                     elif indigo.variables["starling_hot_water_disabled"].getValue(bool):
@@ -602,7 +604,10 @@ class Thread_Hub_Handler(threading.Thread):
                                 nest_properties["currentHumidifierState"] = "idle"
                     if indigo.variables["starling_temp_hold_mode_enabled"].getValue(bool):
                         nest_properties["tempHoldMode"] = indigo.variables["starling_temp_hold_mode"].getValue(bool)
+                    self.hubHandlerLogger.warning(f"Modified Message: {nest_properties} ")
+
             # .. DEBUG SETUP END
+
 
             # Properties below already processed by invoking metheod:
             #   nest_id = nest_properties["id"]
@@ -737,27 +742,38 @@ class Thread_Hub_Handler(threading.Thread):
                     self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" temperature update to {nest_current_temperature_ui}")
 
             if (nest_dev.states["target_temperature"] != nest_target_temperature) or (command == API_COMMAND_START_DEVICE):
+                keyValueList.append({"key": "target_temperature", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
                 if nest_can_cool:
-                    keyValueList.append({"key": "target_temperature", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
+                    if nest_hvac_mode == "cool":
+                        keyValueList.append({"key": "setpointCool", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
+                        info_message_part_of = "cooling"
+                    elif nest_hvac_mode == "heat":
+                        keyValueList.append({"key": "setpointHeat", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
+                        info_message_part_of = "heating"
+                    else:
+                        info_message_part_of = ""
                 else:
-                    keyValueList.append({"key": "target_temperature", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
                     keyValueList.append({"key": "setpointHeat", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
-                if (not nest_can_cool) and (not nest_dev_props.get("hideSetpointBroadcast", False)):
-                    self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set setpoint to {nest_target_temperature_ui}")
+                    info_message_part_of = "heating"
+                if (not nest_dev_props.get("hideSetpointBroadcast", False)) and info_message_part_of != "":
+                    self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set {info_message_part_of} setpoint to {nest_target_temperature_ui}")
 
             if nest_can_cool:
                 if (nest_dev.states["target_cooling_threshold_temperature"] != nest_target_cooling_threshold_temperature) or (command == API_COMMAND_START_DEVICE):
                     keyValueList.append({"key": "target_cooling_threshold_temperature", "value": nest_target_cooling_threshold_temperature,
                                          "uiValue": nest_target_cooling_threshold_temperature_ui})  # noqa
-                    if nest_dev.states["setpointCool"] != nest_target_cooling_threshold_temperature or (command == API_COMMAND_START_DEVICE):
-                        keyValueList.append({"key": "setpointCool", "value": nest_target_cooling_threshold_temperature})
+                    if nest_hvac_mode == "heatCool":
+                        if nest_dev.states["setpointCool"] != nest_target_cooling_threshold_temperature or (command == API_COMMAND_START_DEVICE):
+                            keyValueList.append({"key": "setpointCool", "value": nest_target_cooling_threshold_temperature})
                     if not nest_dev_props.get("hideSetpointBroadcast", False):
                         self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set cooling threshold setpoint to {nest_target_cooling_threshold_temperature_ui}")
 
                 if (nest_dev.states["target_heating_threshold_temperature"] != nest_target_heating_threshold_temperature) or (command == API_COMMAND_START_DEVICE):
                     keyValueList.append({"key": "target_heating_threshold_temperature", "value": nest_target_heating_threshold_temperature,
                                          "uiValue": nest_target_heating_threshold_temperature_ui})  # noqa
-                    keyValueList.append({"key": "setpointHeat", "value": nest_target_heating_threshold_temperature})
+                    if nest_hvac_mode == "heatCool":
+                        if nest_dev.states["setpointHeat"] != nest_target_heating_threshold_temperature or (command == API_COMMAND_START_DEVICE):
+                            keyValueList.append({"key": "setpointHeat", "value": nest_target_heating_threshold_temperature})
                     if not nest_dev_props.get("hideSetpointBroadcast", False):
                         self.hubHandlerLogger.info(f"Received \"{nest_dev.name}\" set heating threshold setpoint to {nest_target_heating_threshold_temperature_ui}")
 
@@ -1193,7 +1209,7 @@ class Thread_Hub_Handler(threading.Thread):
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
 
-    def set_thermostat_temperature(self, command, nest_device_id, nest_thermostat_temperature, log_action_name):
+    def set_thermostat_temperature(self, command, nest_device_id, target_temperature, state_key, log_action_name):
         try:
             pass
             starling_hub_dev = indigo.devices[self.starling_hub_device_id]
@@ -1204,38 +1220,38 @@ class Thread_Hub_Handler(threading.Thread):
             temperature_units = nest_dev.states["display_temperature_units"]
             # Note that updates to the Starling Hub must always be done in centigrade, so need to be converted if Fahrenheit
             if temperature_units == "F":
-                nest_thermostat_temperature_converted = round(float(((float(nest_thermostat_temperature) - 32.0) * 5.0) / 9.0), 1)
-                nest_thermostat_temperature_ui = f"{nest_thermostat_temperature}°F"
+                nest_target_temperature_converted = round(float(((float(target_temperature) - 32.0) * 5.0) / 9.0), 1)
+                nest_target_temperature_ui = f"{target_temperature}°F"
             else:
-                nest_thermostat_temperature_converted = nest_thermostat_temperature
-                nest_thermostat_temperature_ui = f"{nest_thermostat_temperature:.1f}°C"
+                nest_target_temperature_converted = target_temperature
+                nest_target_temperature_ui = f"{target_temperature:.1f}°C"
 
-            if nest_thermostat_temperature_converted < 9.0:
-                nest_thermostat_temperature_converted = 9.0  # set to Nest Thermostat minimum setpoint value
-            elif nest_thermostat_temperature_converted > 32.0:
-                nest_thermostat_temperature_converted = 32.0  # set to Nest Thermostat maximum setpoint value
+            if nest_target_temperature_converted < 9.0:
+                nest_target_temperature_converted = 9.0  # set to Nest Thermostat minimum setpoint value
+            elif nest_target_temperature_converted > 32.0:
+                nest_target_temperature_converted = 32.0  # set to Nest Thermostat maximum setpoint value
 
             nest_device_command = f"devices/{nest_dev.address}"
 
+            # Update dependant on HVAC state
+
+            indigo_device_state = state_key  # One of "setpointHeat" or "setpointCool"
             if command == SET_TARGET_TEMPERATURE:
                 api_property = "targetTemperature"
-                indigo_device_state = "setpointHeat"
                 plugin_device_state = "target_temperature"
                 ui_state = "Thermostat Setpoint"
             elif command == SET_TARGET_COOLING_THRESHOLD_TEMPERATURE:
                 api_property = "targetCoolingThresholdTemperature"
-                indigo_device_state = "setpointCool"
                 plugin_device_state = "target_cooling_threshold_temperature"
                 ui_state = "Thermostat Cooling Setpoint"
             elif command == SET_TARGET_HEATING_THRESHOLD_TEMPERATURE:
                 api_property = "targetHeatingThresholdTemperature"
-                indigo_device_state = "setpointHeat"
                 plugin_device_state = "target_heating_threshold_temperature"
                 ui_state = "Thermostat Heating Setpoint"
             else:
                 return
 
-            thermostat_temperature_for_api = {api_property: nest_thermostat_temperature_converted}
+            thermostat_temperature_for_api = {api_property: nest_target_temperature_converted}
             status, result = self.update_starling_hub(starling_hub_dev, nest_device_command, thermostat_temperature_for_api)
 
             if status != "OK":
@@ -1248,18 +1264,18 @@ class Thread_Hub_Handler(threading.Thread):
                 nest_dev.updateStatesOnServer(keyValueList)
                 nest_dev.updateStateImageOnServer(indigo.kStateImageSel.SensorOff)
 
-                self.hubHandlerLogger.error(f"send \"{nest_dev.name}\" {ui_state} {log_action_name} to {nest_thermostat_temperature_ui} failed")
+                self.hubHandlerLogger.error(f"send \"{nest_dev.name}\" {ui_state} {log_action_name} to {nest_target_temperature_ui} failed")
                 return
             else:
                 # All is good
-                if nest_dev.states["target_temperature"] != nest_thermostat_temperature:
+                if nest_dev.states["target_temperature"] != target_temperature:
                     keyValueList = list()
-                    keyValueList.append({"key": plugin_device_state, "value": nest_thermostat_temperature, "uiValue": nest_thermostat_temperature_ui})
-                    keyValueList.append({"key": indigo_device_state, "value": nest_thermostat_temperature, "uiValue": nest_thermostat_temperature_ui})
+                    keyValueList.append({"key": plugin_device_state, "value": target_temperature, "uiValue": nest_target_temperature_ui})
+                    keyValueList.append({"key": indigo_device_state, "value": target_temperature, "uiValue": nest_target_temperature_ui})
                     nest_dev.updateStatesOnServer(keyValueList)
 
                     if not nest_dev_props.get("hideSetpointBroadcast", False):
-                        self.hubHandlerLogger.info(f"sent \"{nest_dev.name}\" {log_action_name} to {nest_thermostat_temperature_ui}")
+                        self.hubHandlerLogger.info(f"sent \"{nest_dev.name}\" {log_action_name} to {nest_target_temperature_ui}")
 
                 self.hubHandlerLogger.debug(f"Starling API: Status={status}, Result='{result}'")
 
@@ -1495,7 +1511,7 @@ class Thread_Hub_Handler(threading.Thread):
             error_message = None
 
             try:
-                self.hubHandlerLogger.starling_api(f"Sending message from '{starling_hub_dev.name}':{requests_string} | {starling_properties}")  # noqa [Unresolved attribute reference]
+                self.hubHandlerLogger.starling_api(f"Sending message to '{starling_hub_dev.name}':{requests_string} | {starling_properties}")  # noqa [Unresolved attribute reference]
                 reply = requests.post(requests_string, json=starling_properties, timeout=5)
                 # print(f"Reply Status: {reply.status_code}, Text: {reply.text}")
                 status_code = reply.status_code

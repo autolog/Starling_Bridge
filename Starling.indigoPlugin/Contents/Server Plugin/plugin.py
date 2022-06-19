@@ -345,7 +345,6 @@ class Plugin(indigo.PluginBase):
                 new_setpoint = dev.heatSetpoint + action.actionValue
                 self._handle_change_setpoint_action(dev, new_setpoint, "increase heat setpoint", "setpointHeat")
 
-
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
 
@@ -361,16 +360,19 @@ class Plugin(indigo.PluginBase):
         if state_key == "setpointCool":
             # Command hardware module (dev) to change the cool setpoint to new_setpoint here:
             if dev.states["hvacOperationMode"] == indigo.kHvacMode.HeatCool:
-                self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_HIGH, SET_TARGET_COOLING_THRESHOLD_TEMPERATURE, [dev.id], [new_setpoint, log_action_name]))
+                self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_HIGH, SET_TARGET_COOLING_THRESHOLD_TEMPERATURE, [dev.id], [new_setpoint, state_key, log_action_name]))
+            elif dev.states["hvacOperationMode"] == indigo.kHvacMode.Cool:
+                self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_HIGH, SET_TARGET_TEMPERATURE, [dev.id], [new_setpoint, state_key, log_action_name]))
             else:
-                self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_HIGH, SET_TARGET_TEMPERATURE, [dev.id], [new_setpoint, log_action_name]))
-
+                self.logger.warning(f"Setting Cool setpoint ignored for '{dev.name}' as only supported by an HVAC mode of 'Cool On' or 'Auto Heat/Cool'.")
         elif state_key == "setpointHeat":
             # Command hardware module (dev) to change the heat setpoint to new_setpoint here:
             if dev.states["hvacOperationMode"] == indigo.kHvacMode.HeatCool:
-                self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_HIGH, SET_TARGET_HEATING_THRESHOLD_TEMPERATURE, [dev.id], [new_setpoint, log_action_name]))
+                self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_HIGH, SET_TARGET_HEATING_THRESHOLD_TEMPERATURE, [dev.id], [new_setpoint, state_key, log_action_name]))
+            elif dev.states["hvacOperationMode"] == indigo.kHvacMode.Heat:
+                self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_HIGH, SET_TARGET_TEMPERATURE, [dev.id], [new_setpoint, state_key, log_action_name]))
             else:
-                self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_HIGH, SET_TARGET_TEMPERATURE, [dev.id], [new_setpoint, log_action_name]))
+                self.logger.warning(f"Setting Heat setpoint ignored for '{dev.name}' as only supported by an HVAC mode of 'Heat On' or 'Auto Heat/Cool'.")
 
         # Indigo Device state updates and information message performed in hubHandler on receipt of queued message
 
