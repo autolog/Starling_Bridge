@@ -604,10 +604,11 @@ class Thread_Hub_Handler(threading.Thread):
                                 nest_properties["currentHumidifierState"] = "idle"
                     if indigo.variables["starling_temp_hold_mode_enabled"].getValue(bool):
                         nest_properties["tempHoldMode"] = indigo.variables["starling_temp_hold_mode"].getValue(bool)
+                    if indigo.variables["starling_preset_selected_enabled"].getValue(bool):
+                        nest_properties["presetSelected"] = indigo.variables["starling_preset_selected"].value
                     self.hubHandlerLogger.warning(f"Modified Message: {nest_properties} ")
 
             # .. DEBUG SETUP END
-
 
             # Properties below already processed by invoking metheod:
             #   nest_id = nest_properties["id"]
@@ -633,9 +634,11 @@ class Thread_Hub_Handler(threading.Thread):
             nest_hvac_mode = nest_properties["hvacMode"]
             nest_hvac_state = nest_properties["hvacState"]
             nest_sensor_selected = nest_properties.get("sensorSelected", None)
+            nest_preset_selected = nest_properties.get("presetSelected", None)
             nest_target_cooling_threshold_temperature = nest_properties["targetCoolingThresholdTemperature"]
             nest_target_heating_threshold_temperature = nest_properties["targetHeatingThresholdTemperature"]
             nest_target_humidity = nest_properties.get("targetHumidity", None)
+            nest_target_humidity_ui = f"{nest_target_humidity}%"
             nest_target_temperature = nest_properties["targetTemperature"]
             nest_temp_hold_mode = nest_properties.get("tempHoldMode", None)
 
@@ -648,6 +651,7 @@ class Thread_Hub_Handler(threading.Thread):
                 nest_dev_props["fan_enabled"] = False if nest_fan_running is None else True
                 nest_dev_props["hot_water_enabled"] = False if nest_hot_water_enabled is None else True
                 nest_dev_props["humidifier_enabled"] = False if nest_current_humidifier_state is None else True
+                nest_dev_props["preset_enabled"] = False if nest_preset_selected is None else True
                 nest_dev_props["sensor_enabled"] = False if nest_sensor_selected is None else True
                 nest_dev_props["temp_hold_mode_enabled"] = False if nest_temp_hold_mode is None else True
                 nest_dev.replacePluginPropsOnServer(nest_dev_props)
@@ -691,6 +695,10 @@ class Thread_Hub_Handler(threading.Thread):
             if nest_sensor_selected is not None:
                 if (nest_dev.states["sensor_selected"] != nest_sensor_selected) or (command == API_COMMAND_START_DEVICE):
                     keyValueList.append({"key": "sensor_selected", "value": nest_sensor_selected})
+
+            if nest_preset_selected is not None:
+                if (nest_dev.states["preset_selected"] != nest_preset_selected) or (command == API_COMMAND_START_DEVICE):
+                    keyValueList.append({"key": "preset_selected", "value": nest_preset_selected})
 
             if nest_temp_hold_mode is not None:
                 if (nest_dev.states["temperature_hold_mode"] != nest_temp_hold_mode) or (command == API_COMMAND_START_DEVICE):
@@ -845,35 +853,36 @@ class Thread_Hub_Handler(threading.Thread):
                 if (nest_dev_humidifier.states["humidifier_active"] != nest_humidifier_active) or (command == API_COMMAND_START_DEVICE):
                     keyValueList_humidifier.append({"key": "humidifier_active", "value": nest_humidifier_active})
                     # keyValueList.append({"key": "humidifier_active", "value": nest_humidifier_active})  # TODO: Implement this?
-                    current_humidifier_state_changed = False
                 if (nest_dev_humidifier.states["current_humidifier_state"] != nest_current_humidifier_state) or (command == API_COMMAND_START_DEVICE):
                     keyValueList_humidifier.append({"key": "current_humidifier_state", "value": nest_current_humidifier_state})
-                    # keyValueList.append({"key": "current_humidifier_state", "value": nest_current_humidifier_state})  # TODO: Implement this?
+                    # keyValueList.append({"key": "current_humidifier_state", "value": nest_current_humidifier_state})  # TODO: Implement this for primary device?
                     current_humidifier_state_changed = True
                 if (nest_dev_humidifier.states["target_humidity"] != nest_target_humidity) or (command == API_COMMAND_START_DEVICE):
                     keyValueList_humidifier.append({"key": "target_humidity", "value": nest_target_humidity})
                     keyValueList_humidifier.append({"key": "brightnessLevel", "value": int(nest_target_humidity)})
-                    # keyValueList.append({"key": "target_humidity", "value": nest_target_humidity})  # TODO: Implement this?
+                    # keyValueList.append({"key": "target_humidity", "value": nest_target_humidity})  # TODO: Implement this for primary device?
                     current_humidifier_state_changed = True
                 if (nest_dev_humidifier.states["humidity_percent"] != nest_humidity_percent) or (command == API_COMMAND_START_DEVICE):
                     keyValueList_humidifier.append({"key": "humidity_percent", "value": nest_humidity_percent})
                     # Note that the main Thermostat device has the humidity percent updated separately as not dependent on having a humidifier
                 if len(keyValueList_humidifier) > 0:
                     if current_humidifier_state_changed:
-                        # Set Indigo required internal states: hvacDehumidifierIsOn, hvacHumidifierIsOn  TODO: Implement this?
+                        # Set Indigo required internal states: hvacDehumidifierIsOn, hvacHumidifierIsOn  TODO: Implement this for primary device??
                         # Set kStateImageSel
                         if nest_current_humidifier_state == "humidifying":
-                            # keyValueList.append({"key": "hvacHumidifierIsOn", "value": True})  # TODO: Implement this?
-                            # keyValueList.append({"key": "hvacDehumidifierIsOn", "value": False})  # TODO: Implement this?
+                            # keyValueList.append({"key": "hvacHumidifierIsOn", "value": True})  # TODO: Implement this for primary device??
+                            # keyValueList.append({"key": "hvacDehumidifierIsOn", "value": False})  # TODO: Implement this for primary device??
                             nest_dev_humidifier.updateStateImageOnServer(indigo.kStateImageSel.HumidifierOn)
                         elif nest_current_humidifier_state == "dehumidifying":
-                            # keyValueList.append({"key": "hvacHumidifierIsOn", "value": False})  # TODO: Implement this?
-                            # keyValueList.append({"key": "hvacDehumidifierIsOn", "value": True})  # TODO: Implement this?
+                            # keyValueList.append({"key": "hvacHumidifierIsOn", "value": False})  # TODO: Implement this for primary device??
+                            # keyValueList.append({"key": "hvacDehumidifierIsOn", "value": True})  # TODO: Implement this for primary device??
                             nest_dev_humidifier.updateStateImageOnServer(indigo.kStateImageSel.DehumidifierOn)
                         else:
-                            # keyValueList.append({"key": "hvacHumidifierIsOn", "value": False})  # TODO: Implement this?
-                            # keyValueList.append({"key": "hvacDehumidifierIsOn", "value": False})  # TODO: Implement this?
+                            # keyValueList.append({"key": "hvacHumidifierIsOn", "value": False})  # TODO: Implement this for primary device??
+                            # keyValueList.append({"key": "hvacDehumidifierIsOn", "value": False})  # TODO: Implement this for primary device??
                             nest_dev_humidifier.updateStateImageOnServer(indigo.kStateImageSel.HumidifierOff)
+                        if not nest_dev_props.get("hideHumidifierBroadcast", False):
+                            self.hubHandlerLogger.info(f"Received \"{nest_dev_humidifier.name}\" is {nest_current_humidifier_state}, target humidity is {nest_target_humidity_ui}")
                     nest_dev_humidifier.updateStatesOnServer(keyValueList_humidifier)
 
             # Fan Device Check
@@ -897,10 +906,13 @@ class Thread_Hub_Handler(threading.Thread):
                 nest_fan_running_bool = self.derive_boolean(nest_fan_running)
 
                 keyValueList_fan = list()
-                if nest_dev_fan.states["onOffState"] != nest_fan_running_bool:
+                if (nest_dev_fan.states["onOffState"] != nest_fan_running_bool) or (command == API_COMMAND_START_DEVICE):
                     keyValueList_fan.append({"key": "onOffState", "value": nest_fan_running_bool})
                     # Set Indigo required Primary device internal state: hvacFanIsOn
                     keyValueList.append({"key": "hvacFanIsOn", "value": nest_fan_running_bool})
+                    if not nest_dev_props.get("hideFanBroadcast", False):
+                        nest_fan_running_ui = ("OFF", "ON")[nest_fan_running_bool]
+                        self.hubHandlerLogger.info(f"Received \"{nest_dev_fan.name}\" is {nest_fan_running_ui}")
                 if len(keyValueList_fan) > 0:
                     if nest_fan_running_bool:
                         nest_dev_fan.updateStateImageOnServer(indigo.kStateImageSel.FanHigh)
@@ -932,6 +944,9 @@ class Thread_Hub_Handler(threading.Thread):
                 if nest_dev_hot_water.states["onOffState"] != nest_hot_water_enabled_bool:
                     keyValueList_hot_water.append({"key": "onOffState", "value": nest_hot_water_enabled_bool})
                     keyValueList.append({"key": "hot_water_enabled", "value": nest_hot_water_enabled_bool})
+                    nest_hot_water_enabled_ui = ("OFF", "ON")[nest_hot_water_enabled_bool]
+                    if not nest_dev_props.get("hideHotWaterBroadcast", False):
+                        self.hubHandlerLogger.info(f"Received \"{nest_dev_hot_water.name}\" is {nest_hot_water_enabled_ui}")
                 if len(keyValueList_hot_water) > 0:
                     nest_dev_hot_water.updateStateImageOnServer(indigo.kStateImageSel.Auto)
                     nest_dev_hot_water.updateStatesOnServer(keyValueList_hot_water)
@@ -1325,7 +1340,7 @@ class Thread_Hub_Handler(threading.Thread):
 
             nest_device_command = f"devices/{nest_dev.address}"
             # fan_mode_state = ["false", "true"][fan_mode]
-            fan_running_for_api = {"fanMode": fan_running}
+            fan_running_for_api = {"fanRunning": fan_running}
             status, result = self.update_starling_hub(starling_hub_dev, nest_device_command, fan_running_for_api)
 
             if status != "OK":

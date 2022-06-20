@@ -17,6 +17,10 @@
     <Field type="checkbox" id="humidifier_enabled" default="false" hidden="true">
         <Label>Humidifier Enabled:</Label>
     </Field>
+    <Field type="checkbox" id="preset_enabled" default="false" hidden="true">
+        <Label>Preset Enabled:</Label>
+    </Field>
+
     <Field type="checkbox" id="sensor_enabled" default="false" hidden="true">
         <Label>Sensor Enabled:</Label>
     </Field>
@@ -64,6 +68,24 @@
         <Description>Hide temperature message broadcasts in Event Log</Description>
     </Field>
     <Field id="space-hideTemperatureBroadcast" type="label"><Label/></Field>
+
+    <!--Fan -->
+    <Field id="hideFanBroadcast" type="checkbox" defaultValue="false">
+        <Description>Hide Fan message broadcasts in Event Log</Description>
+    </Field>
+    <Field id="space-hideFanBroadcast" type="label"><Label/></Field>
+
+    <!-- Hot Water -->
+    <Field id="hideHotWaterBroadcast" type="checkbox" defaultValue="false">
+        <Description>Hide Hot Water message broadcasts in Event Log</Description>
+    </Field>
+    <Field id="space-hideHotWaterBroadcast" type="label"><Label/></Field>
+
+    <!-- Humidifier -->
+    <Field id="hideHumidifierBroadcast" type="checkbox" defaultValue="false">
+        <Description>Hide humidifier message broadcasts in Event Log</Description>
+    </Field>
+    <Field id="space-hideHumidifierBroadcast" type="label"><Label/></Field>
 
     <!-- Humidity -->
     <Field id="hideHumidityBroadcast" type="checkbox" defaultValue="false">

@@ -1155,6 +1155,11 @@ class Plugin(indigo.PluginBase):
                     #     if target_humidity not in state_list:
                     #         state_list.append(target_humidity)
 
+                    if nest_dev_props.get("preset_enabled", False):
+                        preset_selected = self.getDeviceStateDictForStringType("preset_selected", "Preset Selected changed", "Preset Selected")
+                        if preset_selected not in state_list:
+                            state_list.append(preset_selected)
+
                     if nest_dev_props.get("sensor_enabled", False):
                         sensor_selected = self.getDeviceStateDictForStringType("sensor_selected", "Sensor Selected changed", "Sensor Selected")
                         if sensor_selected not in state_list:
