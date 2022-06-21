@@ -908,6 +908,7 @@ class Thread_Hub_Handler(threading.Thread):
                 keyValueList_fan = list()
                 if (nest_dev_fan.states["onOffState"] != nest_fan_running_bool) or (command == API_COMMAND_START_DEVICE):
                     keyValueList_fan.append({"key": "onOffState", "value": nest_fan_running_bool})
+                    keyValueList.append({"key": "fan_running", "value": nest_fan_running_bool})
                     # Set Indigo required Primary device internal state: hvacFanIsOn
                     keyValueList.append({"key": "hvacFanIsOn", "value": nest_fan_running_bool})
                     if not nest_dev_props.get("hideFanBroadcast", False):
