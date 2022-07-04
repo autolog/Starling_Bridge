@@ -762,7 +762,7 @@ class Thread_Hub_Handler(threading.Thread):
                         keyValueList.append({"key": "hvacOperationMode", "value": indigo.kHvacMode.ProgramHeatCool})
                     else:
                         keyValueList.append({"key": "hvacOperationMode", "value": indigo.kHvacMode.ProgramHeat})
-                    keyValueList.append({"key": "hvac_mode", "value": "eco"})  # Not a valid Starling Nest Thermostat mode BUT indicates what is happening
+                    # keyValueList.append({"key": "hvac_mode", "value": "eco"})  # Not a valid Starling Nest Thermostat mode BUT indicates what is happening TODO Remove this?
                 else:
                     if nest_hvac_mode == "heat":
                         keyValueList.append({"key": "hvacOperationMode", "value": indigo.kHvacMode.Heat})
