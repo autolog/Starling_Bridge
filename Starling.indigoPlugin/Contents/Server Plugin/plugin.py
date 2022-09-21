@@ -520,7 +520,8 @@ class Plugin(indigo.PluginBase):
 
             if len(self.globals[FILTERABLE_DEVICES]) == 0:
                 # Set from stored filterabe devices in values_dict
-                self.globals[FILTERABLE_DEVICES] = json.loads(values_dict["filterable_devices"])
+                if "filterable_devices" in values_dict:
+                    self.globals[FILTERABLE_DEVICES] = json.loads(values_dict["filterable_devices"])
                 # self.logger.info(f"FILTERABLE_DEVICES [JSON_LOADS]: {self.globals[FILTERABLE_DEVICES]}")
 
             if len(nest_message_filter) == 0:
