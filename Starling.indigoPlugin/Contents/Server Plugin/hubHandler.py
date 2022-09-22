@@ -1129,7 +1129,8 @@ class Thread_Hub_Handler(threading.Thread):
                     error_message_ui = "unknown connection error"
             except requests.exceptions.HTTPError as error_message:
                 error_code = "HTTP Error"
-                error_message_ui = f"Access Starling Hub failed with an HTTP error. Retrying . . ."
+                error_message_ui = f"Access Starling Hub failed: {error_message}"
+                # print(f"HTTP ERROR: {error_message}")
                 if error_code != previous_status_message:
                     self.hubHandlerLogger.error(error_message_ui)
                 return "Error", [error_code, error_message_ui]
