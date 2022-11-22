@@ -1112,7 +1112,7 @@ class Thread_Hub_Handler(threading.Thread):
             try:
                 status_code = -1
                 reply = requests.get(requests_string, timeout=5)
-                reply.raise_for_status()
+                reply.raise_for_status()  # raise an HTTP error if one coccurred
                 # print(f"Reply Status: {reply.status_code}, Text: {reply.text}")
                 status_code = reply.status_code
                 if status_code == 200:

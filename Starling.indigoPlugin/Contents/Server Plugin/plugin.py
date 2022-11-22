@@ -1298,7 +1298,17 @@ class Plugin(indigo.PluginBase):
             error_dict = indigo.Dict()
 
             if type_id == "starlingHub":
-                pass
+                api_key = values_dict.get("api_key", "")
+                if api_key == "":
+                    error_message = "Starling Hub API Key is missing,"
+                    error_dict["starling_hub_indigo_id"] = error_message
+                    error_dict["showAlertText"] = error_message
+                    return False, values_dict, error_dict
+                elif "\n" in api_key:
+                    error_message = "Starling Hub API key has a hidden new line character. Re-enter the API Key"
+                    error_dict["starling_hub_indigo_id"] = error_message
+                    error_dict["showAlertText"] = error_message
+                    return False, values_dict, error_dict
 
             elif type_id in ("nestProtect", "nestThermostat", "nestHomeAwayControl", "nestWeather"):
                 if values_dict["starling_hub_indigo_id"] in (-2,-1,0):
