@@ -12,7 +12,7 @@ try:
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 except ImportError:
-    raise ImportError("'cryptography' library missing.\n\n========> Run 'pip3 install cryptography' in Terminal window, then reload plugin. <========\n")
+    pass
 
 from datetime import datetime
 import json
@@ -33,6 +33,7 @@ except ImportError:
 
 from constants import *  # Also imports logging
 from hubHandler import Thread_Hub_Handler
+import requirements
 
 # ================================== Header ===================================
 __author__    = "Autolog"
@@ -103,6 +104,8 @@ class Plugin(indigo.PluginBase):
 
     def __init__(self, plugin_id, plugin_display_name, plugin_version, plugin_prefs):
         super(Plugin, self).__init__(plugin_id, plugin_display_name, plugin_version, plugin_prefs)
+
+        self.do_not_start_devices = False
 
         # Initialise dictionary to store plugin Globals
         self.globals = dict()
@@ -593,6 +596,9 @@ class Plugin(indigo.PluginBase):
 
     def device_start_comm(self, dev):
         try:
+            if self.do_not_start_devices:  # This is set on if Package requirements listed in requirements.txt are not met
+                return
+
             dev.stateListOrDisplayStateIdChanged()  # Ensure that latest devices.xml is being used
             
             # "thermostat", "temp_sensor", "protect", "cam", "guard", "detect", "lock", "home_away_control"
@@ -1029,6 +1035,9 @@ class Plugin(indigo.PluginBase):
 
     def device_stop_comm(self, dev):
         try:
+            if self.do_not_start_devices:  # This is set on if Package requirements listed in requirements.txt are not met
+                return
+
             # self.logger.info(f"Device '{dev.name}' Stopped")
 
             if dev.deviceTypeId in ("nestProtect", "nestThermostat", "nestHomeAwayControl", "nestWeather"):
@@ -1222,6 +1231,13 @@ class Plugin(indigo.PluginBase):
     def startup(self):
         try:
             # self.debug = False
+
+            try:
+                requirements.requirements_check(self.globals[PLUGIN_INFO][PLUGIN_ID])
+            except ImportError as exception_error:
+                self.logger.error(f"PLUGIN STOPPED: {exception_error}")
+                self.do_not_start_devices = True
+                self.stopPlugin()
 
             # First list and process all Starling Hubs
             for dev in indigo.devices.iter("self"):
