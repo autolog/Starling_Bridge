@@ -323,6 +323,9 @@ class Thread_Hub_Handler(threading.Thread):
 
     def handle_devices_command_protect(self, command, hub_id, nest_dev, nest_properties, keyValueList):
         try:
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID]
+
+
             # DEBUG SETUP START ...
             if "_starling_debug" in indigo.variables and indigo.variables["_starling_debug"].getValue(bool):
                 starling_debug_protect = indigo.variables["_starling_debug_protect"].getValue(bool)
@@ -361,7 +364,11 @@ class Thread_Hub_Handler(threading.Thread):
                 keyValueList.append({"key": "batteryStatus", "value": nest_battery_status})
 
             # CO Device Check
-            nest_dev_co_id = self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][CO_DEV_ID]
+            self.hubHandlerLogger.error(f"Checking CO for device '{nest_dev.name}'")
+            if CO_DEV_ID in self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id]:
+                nest_dev_co_id = self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][CO_DEV_ID]
+            else:
+                nest_dev_co_id = 0
             if nest_dev_co_id == 0:
                 # Create CO device
                 nest_dev_co_id = self.create_co_sensor_device(hub_id, nest_dev)

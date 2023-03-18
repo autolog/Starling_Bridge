@@ -598,7 +598,7 @@ class Plugin(indigo.PluginBase):
         try:
             if self.do_not_start_devices:  # This is set on if Package requirements listed in requirements.txt are not met
                 return
-
+            self.logger.warning(f"Starting '{dev.name} [{dev.deviceTypeId}] ...")
             dev.stateListOrDisplayStateIdChanged()  # Ensure that latest devices.xml is being used
             
             # "thermostat", "temp_sensor", "protect", "cam", "guard", "detect", "lock", "home_away_control"
@@ -624,7 +624,7 @@ class Plugin(indigo.PluginBase):
                 self.device_start_comm_nest_home_away_control(dev)
             elif dev.deviceTypeId == "nestWeather":
                 self.device_start_comm_nest_weather(dev)
-
+            self.logger.warning(f"... Started '{dev.name}.")
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
 
@@ -1200,7 +1200,7 @@ class Plugin(indigo.PluginBase):
         try:
             self.sleep(10)
             while True:
-                # self.logger.warning(f"Starling runConcurrentThread looping every {self.globals[POLLING_SECONDS]} second(s).")
+                self.logger.warning(f"Starling runConcurrentThread looping every {self.globals[POLLING_SECONDS]} second(s).")
                 nest_device_list = list()
                 for starling_hub_dev_id in self.globals[HUBS]:
                     if starling_hub_dev_id in self.globals[QUEUES]:
@@ -1239,7 +1239,7 @@ class Plugin(indigo.PluginBase):
                 self.do_not_start_devices = True
                 self.stopPlugin()
 
-            # First list and process all Starling Hubs
+            self.logger.warning("Process Hubs ...")  # First list and process all Starling Hubs  TODO: REMOVE LOGGING
             for dev in indigo.devices.iter("self"):
                 if dev.deviceTypeId == "starlingHub":
                     if dev.enabled:
@@ -1251,7 +1251,7 @@ class Plugin(indigo.PluginBase):
                         # Create Queues for handling Starling Hub API requests
                         self.globals[QUEUES][dev.id] = queue.PriorityQueue()  # Used to queue API requests for specific Starling Hubs
 
-            # Secondly, then process all Starling Nest devices
+            self.logger.warning("Process Devices ...")  # Secondly, then process all Starling Nest devices  TODO: REMOVE LOGGING
             for dev in indigo.devices.iter("self"):
                 if dev.deviceTypeId in ("nestProtect", "nestThermostat", "nestHomeAwayControl", "nestWeather"):  # TODO: More to be added - 30-Mar-2022
                     if dev.enabled:
@@ -1262,6 +1262,7 @@ class Plugin(indigo.PluginBase):
                                 nest_id = dev.address  # e.g. "6416660000123456"
                                 nest_name = dev.states["name"]  # i.e. Name of the device, e.g. "Thermostat", if set in the Nest app (otherwise, "").
 #                                                                               HomeKit accessory names are formed by appending the "name" property to the "where" property
+                                self.logger.warning(f"Process '{dev.name}' ...")  # Secondly, then process all Starling Nest devices  TODO: REMOVE LOGGING
                                 if dev.deviceTypeId == "nestHomeAwayControl":
                                     nest_where = ""
                                 else:

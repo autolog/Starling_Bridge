@@ -14,8 +14,12 @@ try:
 except ImportError:
     pass
 
+# import time  # TODO: REMOVE THIS AS DEBUGGING ONLY
+
 def requirements_check(plugin_id):
     try:
+        # time.sleep(10)
+
         # see https://stackoverflow.com/questions/10214827/find-which-version-of-package-is-installed-with-pip
         packages = [dist.project_name for dist in pkg_resources.working_set]
         packages_dict = dict()
