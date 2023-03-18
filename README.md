@@ -1,2 +1,2 @@
 # Starling_Bridge
-TBC
+Plugin for integrating Nest products through the Starling Bridge hub hardware.
