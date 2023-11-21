@@ -1200,7 +1200,7 @@ class Plugin(indigo.PluginBase):
         try:
             self.sleep(10)
             while True:
-                self.logger.warning(f"Starling runConcurrentThread looping every {self.globals[POLLING_SECONDS]} second(s).")
+                # self.logger.warning(f"Starling runConcurrentThread looping every {self.globals[POLLING_SECONDS]} second(s).")
                 nest_device_list = list()
                 for starling_hub_dev_id in self.globals[HUBS]:
                     if starling_hub_dev_id in self.globals[QUEUES]:
@@ -1235,7 +1235,7 @@ class Plugin(indigo.PluginBase):
             try:
                 requirements.requirements_check(self.globals[PLUGIN_INFO][PLUGIN_ID])
             except ImportError as exception_error:
-                self.logger.error(f"PLUGIN STOPPED: {exception_error}")
+                self.logger.critical(f"PLUGIN STOPPED: {exception_error}")
                 self.do_not_start_devices = True
                 self.stopPlugin()
 
@@ -1599,10 +1599,12 @@ class Plugin(indigo.PluginBase):
             if status_code == 200:
                 status = "OK"
                 return status, reply.json()  # noqa [reply might be referenced before assignment]
-            else:
-                status = "Error"
-                self.logger.error(f"Error [{status_code}] accessing Starling Hub '{starling_hub_dev.name}': {error_code}\n{error_message}")
-                return status, [error_code, error_message]
+            elif status_code == 401 and "or does not have the right permissions for this request" in error_message:
+                self.logger.error("Log onto the Starling Hub via a web browser and check that the W (write) option is set for the Starling Hub API key.")
+                # Drops through to output the full error message
+            status = "Error"
+            self.logger.error(f"Error [{status_code}] accessing Starling Hub '{starling_hub_dev.name}': {error_code}\n{error_message}")
+            return status, [error_code, error_message]
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement

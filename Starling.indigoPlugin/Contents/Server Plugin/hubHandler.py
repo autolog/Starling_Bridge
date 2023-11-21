@@ -323,8 +323,7 @@ class Thread_Hub_Handler(threading.Thread):
 
     def handle_devices_command_protect(self, command, hub_id, nest_dev, nest_properties, keyValueList):
         try:
-            self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID]
-
+            # self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID]
 
             # DEBUG SETUP START ...
             if "_starling_debug" in indigo.variables and indigo.variables["_starling_debug"].getValue(bool):
@@ -364,7 +363,7 @@ class Thread_Hub_Handler(threading.Thread):
                 keyValueList.append({"key": "batteryStatus", "value": nest_battery_status})
 
             # CO Device Check
-            self.hubHandlerLogger.error(f"Checking CO for device '{nest_dev.name}'")
+            # self.hubHandlerLogger.error(f"Checking CO for device '{nest_dev.name}'")
             if CO_DEV_ID in self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id]:
                 nest_dev_co_id = self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_dev.id][CO_DEV_ID]
             else:
@@ -637,6 +636,14 @@ class Thread_Hub_Handler(threading.Thread):
             nest_hot_water_enabled = nest_properties.get("hotWaterEnabled", None)
             nest_humidifier_active = nest_properties.get("humidifierActive", None)
             nest_humidity_percent = nest_properties["humidityPercent"]
+
+            # Fix 2023-11-21: See https://forums.indigodomo.com/viewtopic.php?f=369&t=27594
+            try:
+                nest_humidity_percent = int(round(float(nest_humidity_percent)))
+            except ValueError:
+                pass
+            # Fix end.
+
             nest_humidity_percent_ui = f"{nest_humidity_percent}%"
             nest_hvac_mode = nest_properties["hvacMode"]
             nest_hvac_state = nest_properties["hvacState"]
@@ -792,8 +799,6 @@ class Thread_Hub_Handler(threading.Thread):
                 else:  # Assume: nest_hvac_state = 'off'
                     keyValueList.append({"key": "hvacHeaterIsOn", "value": False})
                     keyValueList.append({"key": "hvacCoolerIsOn", "value": False})
-
-
 
             if (nest_dev.states["target_temperature"] != nest_target_temperature) or (command == API_COMMAND_START_DEVICE) or hvac_mode_changed:
                 keyValueList.append({"key": "target_temperature", "value": nest_target_temperature, "uiValue": nest_target_temperature_ui})
@@ -1564,13 +1569,14 @@ class Thread_Hub_Handler(threading.Thread):
             if status_code == 200:
                 status = "OK"
                 return status, reply.json()  # noqa [reply might be referenced before assignment]
+            status = "Error"
+            if error_message is None:
+                self.hubHandlerLogger.error(f"Error [{status_code}] updating Starling Hub '{starling_hub_dev.name}': {error_code}")
             else:
-                status = "Error"
-                if error_message is None:
-                    self.hubHandlerLogger.error(f"Error [{status_code}] accessing Starling Hub '{starling_hub_dev.name}': {error_code}")
-                else:
-                    self.hubHandlerLogger.error(f"Error [{status_code}] accessing Starling Hub '{starling_hub_dev.name}': {error_code}\n{error_message}")
-                return status, [error_code, error_message]
+                self.hubHandlerLogger.error(f"Error [{status_code}] updating Starling Hub '{starling_hub_dev.name}': {error_code}\n{error_message}")
+                if status_code == 401 and "or does not have the right permissions for this request" in error_message:
+                    self.hubHandlerLogger.error("Log onto the Starling Hub via a web browser and check the API Key is correct and/or that the W (write) option is set for the Starling Hub API key.")
+            return status, [error_code, error_message]
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement

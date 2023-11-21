@@ -6,6 +6,7 @@
 
 from packaging import version
 import pkg_resources
+import sys
 
 # ============================== Custom Imports ===============================
 try:
@@ -18,7 +19,7 @@ except ImportError:
 
 def requirements_check(plugin_id):
     try:
-        # time.sleep(10)
+        pip_version = f'pip{sys.version_info.major}.{sys.version_info.minor}'
 
         # see https://stackoverflow.com/questions/10214827/find-which-version-of-package-is-installed-with-pip
         packages = [dist.project_name for dist in pkg_resources.working_set]
@@ -40,10 +41,10 @@ def requirements_check(plugin_id):
             try:
                 plugin_package_version = packages_dict[requirements_package]
             except KeyError as e:
-                raise ImportError(f"'{requirements_package}' Package missing.\n\n========> Run 'pip3 install {requirements_package}' in Terminal window, then reload plugin. <========\n")
+                raise ImportError(f"'{requirements_package}' Package missing.\n\n========> Run '{pip_version} install {requirements_package}' in Terminal window, then reload plugin. <========\n")
 
             if version.parse(plugin_package_version) < version.parse(requirements_version):
                 raise ImportError(
-                    f"'{requirements_package}' Package should be updated.\n\n========> Run 'pip3 install --upgrade {requirements_package}' in a Terminal window, then reload plugin. <========\n")
+                    f"'{requirements_package}' (version {version.parse(plugin_package_version)}) Package should be updated to version: {version.parse(requirements_version)}.\n\n========> Run '{pip_version} install --upgrade {requirements_package}' in a Terminal window, then reload plugin. <========\n")
     except IOError as e:
         raise IOError(f"Unable to access requirements file to check required packages. IO Error: {e}")
