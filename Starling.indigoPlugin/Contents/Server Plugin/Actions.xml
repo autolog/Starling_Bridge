@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 
 <Actions>
+    <Action id="boostHotWater" deviceFilter="self.nestThermostat" uiPath="DeviceActions">
+        <Name>Boost Hot Water</Name>
+        <CallbackMethod>boostHotWater</CallbackMethod>
+    </Action>
     <Action id="turnOnEcoMode" deviceFilter="self.nestThermostat" uiPath="DeviceActions">
         <Name>Turn On Eco Mode</Name>
         <CallbackMethod>turnOnEcoMode</CallbackMethod>

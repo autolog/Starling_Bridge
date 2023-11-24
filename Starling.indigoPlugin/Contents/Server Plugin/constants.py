@@ -15,6 +15,8 @@ except ImportError:
 number = -1
 
 debug_show_constants = False
+debug_use_labels = False
+
 
 def constant_id(constant_label) -> int:  # Auto increment constant id
     global number
@@ -23,10 +25,13 @@ def constant_id(constant_label) -> int:  # Auto increment constant id
     number += 1
     if debug_show_constants:
         indigo.server.log(f"{number}: {constant_label}", level=logging.DEBUG)
-    return number
-
+    if debug_use_labels:
+        return constant_label
+    else:
+        return number
 
 # plugin Constants
+
 
 try:
     # noinspection PyUnresolvedReferences
@@ -42,6 +47,7 @@ API_COMMAND_POLL_DEVICE  = constant_id("API_COMMAND_POLL_DEVICE")
 API_COMMAND_START_DEVICE  = constant_id("API_COMMAND_START_DEVICE")
 API_COMMAND_STATUS = constant_id("API_COMMAND_STATUS")
 API_VERSION = constant_id("API_VERSION")
+BOOST_HOT_WATER = constant_id("BOOST_HOT_WATER")
 CO_DEV_ID = constant_id("CO_DEV_ID")
 DEVICES = constant_id("DEVICES")
 EVENT = constant_id("STARLING_EVENT")
@@ -54,6 +60,12 @@ GET_CONTROL_API_DEVICES_ID_PROPERTY = constant_id("GET_CONTROL_API_DEVICES_ID_PR
 GET_CONTROL_API_DEVICES_ID_SNAPSHOT = constant_id("GET_CONTROL_API_DEVICES_ID_SNAPSHOT")
 GET_CONTROL_API_STATUS = constant_id("GET_CONTROL_API_STATUS")
 HOT_WATER_DEV_ID = constant_id("HOT_WATER_DEV_ID")
+HOT_WATER_MODE = constant_id("HOT_WATER_MODE")
+HOT_WATER_MODE_BOOST = "Boost"
+HOT_WATER_MODE_OFF = "Off"
+HOT_WATER_MODE_ON = "On"
+HOT_WATER_MODE_ON_REPEATING = "Repeat"
+HOT_WATER_TIMERS = constant_id("HOT_WATER_TIMERS")
 HUBS = constant_id("HUBS")
 HUB_QUEUE = constant_id("STARLING_HUB_QUEUE")
 HUMIDIFIER_DEV_ID = constant_id("HUMIDIFIER_DEV_ID")

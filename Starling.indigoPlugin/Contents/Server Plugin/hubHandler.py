@@ -100,6 +100,12 @@ class Thread_Hub_Handler(threading.Thread):
                         hot_water_enabled = argument_list[0]  # Bool: True | False
                         hot_water_ui = argument_list[1]
                         self.set_hot_water(nest_dev_id, hot_water_enabled, hot_water_ui)
+                    elif command == BOOST_HOT_WATER:
+                        nest_dev_id = nest_device_list[0]
+                        hot_water_enabled = argument_list[0]  # Bool: True | False
+                        hot_water_ui = argument_list[1]
+                        self.set_hot_boost(nest_dev_id, hot_water_enabled, hot_water_ui)
+
                     elif command == SET_HUMIDIFIER:
                         nest_dev_id = nest_device_list[0]
                         humidifier_active = argument_list[0]  # Bool: True | False
@@ -954,10 +960,10 @@ class Thread_Hub_Handler(threading.Thread):
                 nest_hot_water_enabled_bool = self.derive_boolean(nest_hot_water_enabled)
 
                 keyValueList_hot_water = list()
-                if nest_dev_hot_water.states["onOffState"] != nest_hot_water_enabled_bool:
-                    keyValueList_hot_water.append({"key": "onOffState", "value": nest_hot_water_enabled_bool})
+                if (nest_dev_hot_water.states["onOffState"] != nest_hot_water_enabled_bool) or (nest_dev_hot_water.states["onOffState.ui"] == "Disconnected"):
+                    nest_hot_water_enabled_ui = ("Off", "On")[nest_hot_water_enabled_bool]
+                    keyValueList_hot_water.append({"key": "onOffState", "value": nest_hot_water_enabled_bool,  "uiValue": nest_hot_water_enabled_ui})
                     keyValueList.append({"key": "hot_water_enabled", "value": nest_hot_water_enabled_bool})
-                    nest_hot_water_enabled_ui = ("OFF", "ON")[nest_hot_water_enabled_bool]
                     if not nest_dev_props.get("hideHotWaterBroadcast", False):
                         self.hubHandlerLogger.info(f"Received \"{nest_dev_hot_water.name}\" is {nest_hot_water_enabled_ui}")
                 if len(keyValueList_hot_water) > 0:
@@ -1415,9 +1421,74 @@ class Thread_Hub_Handler(threading.Thread):
 
     def set_hot_water(self, nest_device_id, hot_water_enabled, hot_water_ui):
         try:
+            # self.hubHandlerLogger.error(f"SET_HOT_WATER: {hot_water_enabled}, UI='{hot_water_ui}'")  # TODO: Debug
             starling_hub_dev = indigo.devices[self.starling_hub_device_id]
-
             nest_dev = indigo.devices[nest_device_id]
+
+            # Cancel and delete any existing timer for hot water
+            if nest_device_id in self.globals[HOT_WATER_TIMERS]:
+                self.globals[HOT_WATER_TIMERS][nest_device_id].cancel()
+                del self.globals[HOT_WATER_TIMERS][nest_device_id]
+
+            # If currently Hot water Mode is OFF, force it to ON (Will get reset if request is to turn hot water off.
+            if self.globals[HUBS][self.starling_hub_device_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_device_id][HOT_WATER_MODE] == HOT_WATER_MODE_OFF:
+                self.globals[HUBS][self.starling_hub_device_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_device_id][HOT_WATER_MODE] = HOT_WATER_MODE_ON
+
+            if hot_water_enabled:
+                if self.globals[HUBS][self.starling_hub_device_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_device_id][HOT_WATER_MODE] in [HOT_WATER_MODE_ON, HOT_WATER_MODE_ON_REPEATING]:
+                    timer_interval_seconds = 25.0 * 60  # Set to 25 Minutes as the minimum boost is 30 minutes
+                    # timer_interval_seconds = 2.0 * 60  # TODO: TESTING, Set to 2 Minutes
+                    self.globals[HOT_WATER_TIMERS][nest_device_id] = threading.Timer(timer_interval_seconds,
+                                                                                     self.set_hot_water_repeat_by_timer,
+                                                                                [[nest_device_id, hot_water_enabled, "repeat turn"]])
+                    self.globals[HOT_WATER_TIMERS][nest_device_id].start()
+                    self.globals[HUBS][self.starling_hub_device_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_device_id][HOT_WATER_MODE] = HOT_WATER_MODE_ON_REPEATING
+            else:
+                self.globals[HUBS][self.starling_hub_device_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_device_id][HOT_WATER_MODE] = HOT_WATER_MODE_OFF
+
+            nest_device_command = f"devices/{nest_dev.address}"
+            hot_water_enabled_for_api = {"hotWaterEnabled": hot_water_enabled}
+            status, result = self.update_starling_hub(starling_hub_dev, nest_device_command, hot_water_enabled_for_api)
+
+            if status != "OK":
+                error_code = result[0]
+                # error_message = result[1]s
+                keyValueList = [
+                    {"key": "status", "value": "Disconnected"},
+                    {"key": "status_message", "value": error_code}
+                ]
+                nest_dev.updateStatesOnServer(keyValueList)
+                nest_dev.updateStateImageOnServer(indigo.kStateImageSel.SensorOff)
+
+                self.hubHandlerLogger.error(f"send \"{nest_dev.name}\" {hot_water_ui} Hot Water '{hot_water_ui}' failed")
+                return
+            else:
+                # All is good
+                self.hubHandlerLogger.info(f"sent \"{nest_dev.name}\" {hot_water_ui} Hot Water")
+
+                self.hubHandlerLogger.debug(f"Starling API: Status={status}, Result='{result}'")
+
+            pass
+        except Exception as exception_error:
+            self.exception_handler(exception_error, True)  # Log error and display failing statement
+
+    def set_hot_water_repeat_by_timer(self, arguments):
+        try:
+            nest_device_id, hot_water_enabled, hot_water_ui = arguments
+            if hot_water_enabled:
+                if self.globals[HUBS][self.starling_hub_device_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_device_id][HOT_WATER_MODE] == HOT_WATER_MODE_ON_REPEATING:
+                    action_request_ui = "repeat turn on"
+                    self.globals[QUEUES][self.starling_hub_device_id].put((QUEUE_PRIORITY_COMMAND_HIGH, SET_HOT_WATER, [nest_device_id], [True, action_request_ui]))
+
+        except Exception as exception_error:
+            self.exception_handler(exception_error, True)  # Log error and display failing statement
+
+    def set_hot_boost(self, nest_device_id, hot_water_enabled, hot_water_ui):
+        try:
+            starling_hub_dev = indigo.devices[self.starling_hub_device_id]
+            nest_dev = indigo.devices[nest_device_id]
+
+            self.globals[HUBS][self.starling_hub_device_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][nest_device_id][HOT_WATER_MODE] = HOT_WATER_MODE_BOOST
 
             nest_device_command = f"devices/{nest_dev.address}"
             hot_water_enabled_for_api = {"hotWaterEnabled": hot_water_enabled}
@@ -1761,6 +1832,8 @@ class Thread_Hub_Handler(threading.Thread):
 
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][primary_dev.id][HOT_WATER_DEV_ID] = secondary_dev_id
             self.globals[INDIGO_DEVICE_TO_HUB][secondary_dev_id] = hub_id
+
+
 
             return secondary_dev_id
 

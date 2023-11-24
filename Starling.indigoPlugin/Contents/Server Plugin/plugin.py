@@ -139,6 +139,7 @@ class Plugin(indigo.PluginBase):
         self.globals[HUBS] = dict()
         self.globals[EVENT] = dict()
         self.globals[THREAD] = dict()
+        self.globals[HOT_WATER_TIMERS] = dict()
         self.globals[INDIGO_DEVICE_TO_HUB] = dict()
         self.globals[TRIGGERS_NEST_PROTECT] = dict()
         self.globals[TRIGGERS_NEST_PROTECTS_ALL] = dict()
@@ -412,6 +413,22 @@ class Plugin(indigo.PluginBase):
             # Else log failure but do NOT update state on Indigo Server.
             self.logger.error(f"send \"{dev.name}\" mode change to {hvac_mode} failed")
 
+    def boostHotWater(self,  action, dev):
+
+        try:
+            props = dev.pluginProps
+            hub_id = int(props.get("starling_hub_indigo_id", 0))
+            if hub_id == 0:
+                self.logger.error(f"Warning: Starling Hub id not defined for {dev.name}")
+                return
+
+            turn_on_off_request = True
+            action_request_ui = f'turn {["off", "on"][turn_on_off_request]}'
+            self.globals[QUEUES][hub_id].put((QUEUE_PRIORITY_COMMAND_HIGH, BOOST_HOT_WATER, [dev.id], [turn_on_off_request, action_request_ui]))
+
+        except Exception as exception_error:
+            self.exception_handler(exception_error, True)  # Log error and display failing statement
+
     def turnOnEcoMode(self,  action, dev):
         try:
             self.setEcoMode(dev, True)
@@ -604,26 +621,31 @@ class Plugin(indigo.PluginBase):
             # "thermostat", "temp_sensor", "protect", "cam", "guard", "detect", "lock", "home_away_control"
 
             # Check Device Type and invoke appropriate method to start it
-            if dev.deviceTypeId == "starlingHub":
-                self.device_start_comm_starling_hub(dev)
-            elif dev.deviceTypeId == "nestProtect":
-                self.device_start_comm_nest_protect(dev)
-            elif dev.deviceTypeId == "nestThermostat":
-                self.device_start_comm_nest_thermostat(dev)
-            elif dev.deviceTypeId == "nestTempSensor":
-                self.device_start_comm_nest_temp_sensor(dev)
-            elif dev.deviceTypeId == "nestCam":
-                self.device_start_comm_nest_cam(dev)
-            elif dev.deviceTypeId == "nestGuard":
-                self.device_start_comm_nest_guard(dev)
-            elif dev.deviceTypeId == "nestDetect":
-                self.device_start_comm_nest_detect(dev)
-            elif dev.deviceTypeId == "nestLock":
-                self.device_start_comm_nest_lock(dev)
-            elif dev.deviceTypeId == "nestHomeAwayControl":
-                self.device_start_comm_nest_home_away_control(dev)
-            elif dev.deviceTypeId == "nestWeather":
-                self.device_start_comm_nest_weather(dev)
+            match dev.deviceTypeId:
+                case "starlingHub":
+                    self.device_start_comm_starling_hub(dev)
+                case "nestProtect":
+                    self.device_start_comm_nest_protect(dev)
+                case "nestThermostatHotWater":
+                    self.device_start_comm_nest_thermostat_hot_water(dev)
+                case "nestThermostat":
+                    self.device_start_comm_nest_thermostat(dev)
+                case "nestTempSensor":
+                    self.device_start_comm_nest_temp_sensor(dev)
+                case "nestCam":
+                    self.device_start_comm_nest_cam(dev)
+                case "nestGuard":
+                    self.device_start_comm_nest_guard(dev)
+                case "nestDetect":
+                    self.device_start_comm_nest_detect(dev)
+                case "nestLock":
+                    self.device_start_comm_nest_lock(dev)
+                case "nestHomeAwayControl":
+                    self.device_start_comm_nest_home_away_control(dev)
+                case "nestWeather":
+                    self.device_start_comm_nest_weather(dev)
+                case _:
+                    pass
             self.logger.warning(f"... Started '{dev.name}.")
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
@@ -792,6 +814,7 @@ class Plugin(indigo.PluginBase):
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][HUMIDIFIER_DEV_ID] = 0
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][FAN_DEV_ID] = 0
             self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][HOT_WATER_DEV_ID] = 0
+            self.globals[HUBS][hub_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][HOT_WATER_MODE] = HOT_WATER_MODE_OFF
 
             self.check_grouped_devices(hub_id, dev)  # Check grouped devices and ungroup if necessary
 
@@ -804,6 +827,35 @@ class Plugin(indigo.PluginBase):
 
         except Exception as exception_error:
             self.exception_handler(exception_error, True)  # Log error and display failing statement
+
+    def device_start_comm_nest_thermostat_hot_water(self, dev):
+        try:
+            keyValueList = [
+                # {"key": "status", "value": "Connecting"},
+                # {"key": "status_message", "value": "Connecting ..."},
+                {"key": "onOffState", "value": "off", "uiValue": "Disconnected"}
+            ]
+            dev.updateStatesOnServer(keyValueList)
+            dev.updateStateImageOnServer(indigo.kStateImageSel.TimerOn)
+
+            starling_hub_indigo_id = 0
+            dev_id_list = indigo.device.getGroupList(dev.id)
+            if len(dev_id_list) > 1:
+                for linked_dev_id in dev_id_list:
+                    if linked_dev_id != dev.id:
+                        linked_dev = indigo.devices[linked_dev_id]
+                        if linked_dev.deviceTypeId == "nestThermostat":
+                            props = linked_dev.pluginProps
+                            starling_hub_indigo_id = props.get("starling_hub_indigo_id", 0)
+                            break
+            if starling_hub_indigo_id != 0:
+                if dev.id not in self.globals[HUBS][starling_hub_indigo_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID]:
+                    self.globals[HUBS][starling_hub_indigo_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id] = dict()
+                self.globals[HUBS][starling_hub_indigo_id][NEST_DEVICES_BY_INDIGO_DEVICE_ID][dev.id][HOT_WATER_MODE] = HOT_WATER_MODE_OFF
+
+        except Exception as exception_error:
+            self.exception_handler(exception_error, True)  # Log error and display failing statement
+
 
     def device_start_comm_nest_weather(self, dev):
         try:
