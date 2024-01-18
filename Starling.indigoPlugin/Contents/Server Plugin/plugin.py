@@ -7,18 +7,15 @@
 # noinspection PyUnresolvedReferences
 # ============================== Native Imports ===============================
 import base64
-try:
-    from cryptography.fernet import Fernet
-    from cryptography.hazmat.primitives import hashes
-    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-except ImportError:
-    pass
-
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from datetime import datetime
 import json
 import os
 import platform
 import queue
+import requests
 import sys
 import threading
 import traceback
@@ -27,13 +24,11 @@ import traceback
 try:
     # noinspection PyUnresolvedReferences
     import indigo
-    import requests  # noqa Included with Indigo package
 except ImportError:
     pass
 
 from constants import *  # Also imports logging
 from hubHandler import Thread_Hub_Handler
-import requirements
 
 # ================================== Header ===================================
 __author__    = "Autolog"
@@ -1282,15 +1277,6 @@ class Plugin(indigo.PluginBase):
 
     def startup(self):
         try:
-            # self.debug = False
-
-            try:
-                requirements.requirements_check(self.globals[PLUGIN_INFO][PLUGIN_ID])
-            except ImportError as exception_error:
-                self.logger.critical(f"PLUGIN STOPPED: {exception_error}")
-                self.do_not_start_devices = True
-                self.stopPlugin()
-
             self.logger.warning("Process Hubs ...")  # First list and process all Starling Hubs  TODO: REMOVE LOGGING
             for dev in indigo.devices.iter("self"):
                 if dev.deviceTypeId == "starlingHub":
