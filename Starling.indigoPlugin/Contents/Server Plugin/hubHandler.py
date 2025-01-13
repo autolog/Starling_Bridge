@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Starling - Hub Handler © Autolog 2022
+# Starling - Hub Handler © Autolog 2022-2025
 #
 
 try:
@@ -358,7 +358,8 @@ class Thread_Hub_Handler(threading.Thread):
             # Nest Protect Specific properties
             nest_battery_status = nest_properties["batteryStatus"]
             nest_co_detected = nest_properties["coDetected"]
-            nest_manual_test_active = nest_properties["manualTestActive"]
+            # nest_manual_test_active = nest_properties["manualTestActive"]
+            nest_manual_test_active = False
             nest_occupancy_detected = nest_properties.get("occupancyDetected", None)
             nest_smoke_detected = nest_properties["smokeDetected"]
 
@@ -636,7 +637,7 @@ class Thread_Hub_Handler(threading.Thread):
             nest_can_heat = nest_properties["canHeat"]
             nest_current_humidifier_state = nest_properties.get("currentHumidifierState", None)
             nest_current_temperature = nest_properties["currentTemperature"]
-            nest_display_temperature_units = nest_properties["displayTemperatureUnits"]
+            nest_display_temperature_units = nest_properties.get("displayTemperatureUnits", "")
             nest_eco_mode = nest_properties.get("ecoMode", None)
             nest_fan_running = nest_properties.get("fanRunning", None)
             nest_hot_water_enabled = nest_properties.get("hotWaterEnabled", None)
@@ -721,24 +722,24 @@ class Thread_Hub_Handler(threading.Thread):
                     keyValueList.append({"key": "preset_selected", "value": nest_preset_selected})
 
             if nest_temp_hold_mode is not None:
-                if (nest_dev.states["temperature_hold_mode"] != nest_temp_hold_mode) or (command == API_COMMAND_START_DEVICE):
-                    keyValueList.append({"key": "temperature_hold_mode", "value": nest_temp_hold_mode})
+                if (nest_dev.states["temp_hold_mode"] != nest_temp_hold_mode) or (command == API_COMMAND_START_DEVICE):
+                    keyValueList.append({"key": "temp_hold_mode", "value": nest_temp_hold_mode})
 
             if nest_display_temperature_units == "F":
-                nest_backplate_temperature = int(((float(nest_backplate_temperature) * 9) / 5) + 32.0)
+                nest_backplate_temperature = round((((float(nest_backplate_temperature) * 9) / 5) + 32.0), 1)
                 nest_backplate_temperature_ui = f"{nest_backplate_temperature}°F"
 
-                nest_current_temperature = int(((float(nest_current_temperature) * 9) / 5) + 32.0)
+                nest_current_temperature = round((((float(nest_current_temperature) * 9) / 5) + 32.0), 1)
                 nest_current_temperature_ui = f"{nest_current_temperature}°F"
 
                 if nest_can_cool:
-                    nest_target_cooling_threshold_temperature = int(((float(nest_target_cooling_threshold_temperature) * 9) / 5) + 32.0)
+                    nest_target_cooling_threshold_temperature = int(round((((float(nest_target_cooling_threshold_temperature) * 9) / 5) + 32.0), 0))
                     nest_target_cooling_threshold_temperature_ui = f"{nest_target_cooling_threshold_temperature}°F"
 
-                    nest_target_heating_threshold_temperature = int(((float(nest_target_heating_threshold_temperature) * 9) / 5) + 32.0)
+                    nest_target_heating_threshold_temperature = int(round((((float(nest_target_heating_threshold_temperature) * 9) / 5) + 32.0), 0))
                     nest_target_heating_threshold_temperature_ui = f"{nest_target_heating_threshold_temperature}°F"
 
-                nest_target_temperature = int(((float(nest_target_temperature) * 9) / 5) + 32.0)
+                nest_target_temperature = round((((float(nest_target_temperature) * 9) / 5) + 32.0), 0)
                 nest_target_temperature_ui = f"{nest_target_temperature}"
 
             else:
@@ -1034,7 +1035,8 @@ class Thread_Hub_Handler(threading.Thread):
             nest_display_temperature_units = nest_dev_props.get("temperature_units", "C")
 
             if nest_display_temperature_units == "F":
-                nest_current_temperature = int(((float(nest_current_temperature) * 9) / 5) + 32.0)
+
+                nest_current_temperature = round((((float(nest_current_temperature) * 9) / 5) + 32.0), 1)
                 nest_current_temperature_ui = f"{nest_current_temperature}°F"
             else:
                 nest_current_temperature = round(nest_current_temperature, 1)

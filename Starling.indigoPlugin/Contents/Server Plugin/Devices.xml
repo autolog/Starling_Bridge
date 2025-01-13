@@ -272,13 +272,11 @@
                 <TriggerLabel>Target Temperature changed</TriggerLabel>
                 <ControlPageLabel>Target Temperature</ControlPageLabel>
             </State>
-<!--
-            <State id="temperature_hold_mode">
+            <State id="temp_hold_mode">
                 <ValueType boolType="TrueFalse">Boolean</ValueType>
                 <TriggerLabel>Temperature Hold Mode changed</TriggerLabel>
                 <ControlPageLabel>Temperature Hold Mode</ControlPageLabel>
             </State>
--->
         </States>
         <UiDisplayStateId>status</UiDisplayStateId>
     </Device>

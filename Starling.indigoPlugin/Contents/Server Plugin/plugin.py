@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Starling Bridge - Plugin © Autolog 2022
+# Starling Bridge - Plugin © Autolog 2022-2025
 #
 
 # noinspection PyUnresolvedReferences
