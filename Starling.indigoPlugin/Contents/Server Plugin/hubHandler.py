@@ -632,7 +632,10 @@ class Thread_Hub_Handler(threading.Thread):
             #   nest_where = nest_properties["where"]
 
             # Thermostat specific properties
-            nest_backplate_temperature = nest_properties["backplateTemperature"]
+            if "backplateTemperature" in nest_properties:
+                nest_backplate_temperature = nest_properties["backplateTemperature"]
+            else:
+                nest_backplate_temperature = nest_properties["currentTemperature"]
             nest_can_cool = nest_properties["canCool"]
             nest_can_heat = nest_properties["canHeat"]
             nest_current_humidifier_state = nest_properties.get("currentHumidifierState", None)
